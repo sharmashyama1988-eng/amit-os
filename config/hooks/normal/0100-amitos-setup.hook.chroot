@@ -1,0 +1,174 @@
+#!/bin/bash
+# ============================================================
+#  AMIT OS — Core Integration & Post-Installation Hook
+#  Fulfilling the 7 Pillars: Process, Memory, Hardware, 
+#  File System, UI, Security, and Error Handling.
+# ============================================================
+
+set -e
+echo "============================================"
+echo "  Amit OS — Deep System Integration"
+echo "============================================"
+
+# ── 1. OS Identity & Localization ───────────────────────────
+echo "[Core] Configuring OS Identity & Locales..."
+echo "AmitOS" > /etc/hostname
+
+cat > /etc/os-release << 'EOF'
+PRETTY_NAME="Amit OS 1.0"
+NAME="AmitOS"
+VERSION_ID="1.0"
+ID=amitos
+ID_LIKE=debian
+HOME_URL="https://github.com/amit/amitos"
+EOF
+
+locale-gen en_US.UTF-8 || true
+ln -sf /usr/share/zoneinfo/Asia/Kolkata /etc/localtime || true
+
+# ── 2. Process & Memory Management ──────────────────────────
+echo "[Core] Optimizing Memory & Process Handling..."
+cat > /etc/sysctl.d/99-amitos-core.conf << 'EOF'
+# Memory Protection & RAM Management
+vm.swappiness = 10
+vm.vfs_cache_pressure = 50
+vm.dirty_ratio = 10
+vm.dirty_background_ratio = 5
+vm.mmap_min_addr = 65536
+vm.overcommit_memory = 0
+
+# Error Handling: Panic on hung tasks
+kernel.panic = 10
+kernel.panic_on_oops = 1
+kernel.softlockup_panic = 1
+
+# Process Management: Scheduler responsiveness
+kernel.sched_latency_ns = 10000000
+kernel.sched_migration_cost_ns = 500000
+kernel.sched_min_granularity_ns = 2000000
+kernel.sched_wakeup_granularity_ns = 2500000
+
+# Security hardening
+net.ipv4.conf.all.rp_filter = 1
+net.ipv4.tcp_syncookies = 1
+net.ipv4.conf.all.accept_redirects = 0
+kernel.randomize_va_space = 2
+fs.protected_hardlinks = 1
+fs.protected_symlinks = 1
+EOF
+
+# Apply sysctl settings inside chroot
+sysctl -p /etc/sysctl.d/99-amitos-core.conf 2>/dev/null || true
+
+# ── 3. Error Handling & Logging ──────────────────────────────
+echo "[Core] Configuring Error Handling & Persistence..."
+mkdir -p /var/log/journal
+systemd-tmpfiles --create --prefix /var/log/journal || true
+
+cat > /etc/systemd/journald.conf << 'EOF'
+[Journal]
+Storage=persistent
+Compress=yes
+SystemMaxUse=100M
+RuntimeMaxUse=50M
+MaxRetentionSec=1month
+EOF
+
+# ── 4. Security & Access Control ──────────────────────────────
+echo "[Core] Hardening Security & AmitShield Integration..."
+
+# Setup AmitShield Service (executes python daemon directly)
+cat > /etc/systemd/system/amitshield.service << 'EOF'
+[Unit]
+Description=AmitShield Security Engine
+After=network.target
+
+[Service]
+ExecStart=/usr/local/bin/amitshield
+Restart=always
+RestartSec=5
+Nice=-10
+OOMScoreAdjust=-1000
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+# Root Access Control
+chmod 700 /root
+chmod 750 /etc/sudoers.d 2>/dev/null || true
+
+# UFW defaults
+if command -v ufw >/dev/null; then
+    ufw default deny incoming 2>/dev/null || true
+    ufw default allow outgoing 2>/dev/null || true
+fi
+
+# Enable System Services
+systemctl enable amitshield.service 2>/dev/null || true
+systemctl enable apparmor.service 2>/dev/null || true
+systemctl enable fail2ban.service 2>/dev/null || true
+systemctl enable NetworkManager.service 2>/dev/null || true
+systemctl enable sddm.service 2>/dev/null || true
+
+# ── 5. Hardware Abstraction (HAL) ──────────────────────────
+echo "[Core] Setting up Hardware Abstraction Layer..."
+# Ensure all firmware is correctly linked
+update-initramfs -u -k all 2>/dev/null || true
+
+# ── 6. User Interface (GUI) Setup ────────────────────────────
+echo "[Core] Applying Amit OS Branding & UI Defaults..."
+
+# Set Default Background
+BRANDING="/usr/share/amitos/branding"
+mkdir -p "$BRANDING"
+ln -sf "$BRANDING/wallpaper.png" /usr/share/wallpapers/amitos-default.jpg 2>/dev/null || true
+
+# SDDM config (auto login for live session)
+mkdir -p /etc/sddm.conf.d
+cat > /etc/sddm.conf.d/amitos.conf << 'EOF'
+[Theme]
+Current=breeze
+CursorTheme=breeze_cursors
+[Autologin]
+User=amit
+Session=plasma
+EOF
+
+# KDE dark theme defaults
+mkdir -p /etc/skel/.config
+cat > /etc/skel/.config/kdeglobals << 'EOF'
+[General]
+ColorScheme=BreezeDark
+[Icons]
+Theme=breeze-dark
+[KDE]
+LookAndFeelPackage=org.kde.breezedark.desktop
+SingleClick=false
+EOF
+
+# ── 7. File System Management ───────────────────────────────
+echo "[Core] Optimizing File System Performance..."
+# Enable fstrim for SSDs
+systemctl enable fstrim.timer 2>/dev/null || true
+
+# ── 8. GRUB Configuration ────────────────────────────────────
+echo "[Core] Hardening Bootloader..."
+if [ -f /etc/default/grub ]; then
+    cat >> /etc/default/grub << 'EOF'
+GRUB_DISTRIBUTOR="Amit OS"
+GRUB_TIMEOUT=5
+GRUB_CMDLINE_LINUX_DEFAULT="quiet splash loglevel=3 apparmor=1 security=apparmor"
+EOF
+    update-grub 2>/dev/null || true
+fi
+
+# ── 9. Final Cleanup ─────────────────────────────────────────
+echo "[Core] Finalizing OS Image..."
+apt-get autoremove -y 2>/dev/null || true
+apt-get clean 2>/dev/null || true
+
+echo "============================================"
+echo "  Integration Complete! Amit OS Core is Solid."
+echo "============================================"
+

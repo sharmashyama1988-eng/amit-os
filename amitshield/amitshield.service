@@ -1,0 +1,43 @@
+[Unit]
+Description=AmitShield Security Engine — Amit OS Protection Daemon
+Documentation=man:amitshield(8)
+After=network.target network-online.target auditd.service
+Wants=network-online.target
+Before=graphical.target
+
+[Service]
+Type=simple
+ExecStartPre=/usr/local/bin/amitshield-preflight.sh
+ExecStart=/usr/bin/python3 /usr/local/bin/amitshield.py
+ExecReload=/bin/kill -HUP $MAINPID
+ExecStop=/bin/kill -TERM $MAINPID
+
+Restart=on-failure
+RestartSec=5s
+StartLimitInterval=60s
+StartLimitBurst=5
+
+User=root
+Group=root
+WorkingDirectory=/etc/amitshield
+RuntimeDirectory=amitshield
+RuntimeDirectoryMode=0750
+
+# ── Security Hardening ──────────────────────────────────────
+NoNewPrivileges=false
+ProtectHome=read-only
+ProtectSystem=strict
+ReadWritePaths=/var/log /var/run /tmp /etc/amitshield
+PrivateTmp=true
+ProtectKernelTunables=false
+ProtectControlGroups=true
+RestrictRealtime=true
+RestrictSUIDSGID=true
+
+# ── Logging ─────────────────────────────────────────────────
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=amitshield
+
+[Install]
+WantedBy=multi-user.target graphical.target

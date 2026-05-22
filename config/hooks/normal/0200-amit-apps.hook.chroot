@@ -1,0 +1,71 @@
+#!/bin/bash
+# ============================================================
+#  AMIT OS — Custom App Installation Hook
+#  Installs all 15+ custom Python/GTK3 apps into the system
+# ============================================================
+
+set -e
+echo "[Amit Apps] Installing custom suite (15+ apps)..."
+
+# Internal synced path (inside chroot)
+APPS_SRC="/usr/local/amitos/apps"
+BIN="/usr/local/bin"
+DESK="/usr/share/applications"
+
+# Full List of Python Apps
+APP_LIST=(
+    "amitcalc" "amitnotes" "amitmonitor" "amitstore" 
+    "amitwelcome" "amitsettings" "amitclock" "amittray"
+    "amitpaint" "amitcapture" "amitsearch" "amitvault" 
+    "amitcleaner" "amitshield-ui"
+)
+
+# ── Copy Python Files ────────────────────────────────────────
+for app in "${APP_LIST[@]}"; do
+    if [ -f "$APPS_SRC/${app}.py" ]; then
+        cp "$APPS_SRC/${app}.py" "$BIN/${app}.py"
+        chmod +x "$BIN/${app}.py"
+        
+        # Create wrapper
+        cat > "$BIN/$app" << WRAP
+#!/bin/bash
+exec python3 $BIN/${app}.py "\$@"
+WRAP
+        chmod +x "$BIN/$app"
+    fi
+done
+
+# ── Desktop Entries ──────────────────────────────────────────
+function make_desktop {
+    cat > "$DESK/$1.desktop" << EOF
+[Desktop Entry]
+Name=$2
+Comment=$3
+Exec=$BIN/$1
+Icon=$4
+Terminal=false
+Type=Application
+Categories=$5;
+EOF
+}
+
+make_desktop "amitcalc"    "AmitCalc"     "Scientific Calculator" "accessories-calculator" "Utility;Calculator"
+make_desktop "amitnotes"   "AmitNotes"    "Quick Notes" "accessories-text-editor" "Utility"
+make_desktop "amitmonitor" "AmitMonitor"  "System Monitor" "utilities-system-monitor" "System"
+make_desktop "amitstore"   "AmitStore"    "App Store" "system-software-install" "System"
+make_desktop "amitwelcome" "AmitWelcome"  "Welcome Screen" "help-about" "System"
+make_desktop "amitsettings" "AmitSettings" "System Settings" "preferences-system" "Settings;System"
+make_desktop "amitclock"   "AmitClock"    "World Clock" "office-calendar" "Utility"
+make_desktop "amitpaint"   "AmitPaint"    "Drawing App" "applications-graphics" "Graphics"
+make_desktop "amitcapture" "AmitCapture"  "Snipping Tool" "camera-photo" "Utility"
+make_desktop "amitsearch"  "AmitSearch"   "Global Search" "system-search" "Utility;System"
+make_desktop "amitvault"   "AmitVault"    "File Locker" "system-lock-screen" "Utility;System"
+make_desktop "amitcleaner" "AmitCleaner"  "System Junk Cleaner" "user-trash" "System"
+make_desktop "amitshield-ui" "AmitShield" "Security Dashboard" "security-high" "System;Security"
+
+# ── Autostarts ──────────────────────────────────────────────
+mkdir -p /etc/skel/.config/autostart
+cp "$DESK/amitwelcome.desktop" /etc/skel/.config/autostart/
+cp "$DESK/amittray.desktop" /etc/skel/.config/autostart/ 2>/dev/null || true
+
+echo "[Amit Apps] 15+ Custom apps ready!"

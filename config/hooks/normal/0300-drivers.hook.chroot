@@ -1,0 +1,66 @@
+#!/bin/bash
+# ============================================================
+#  AMIT OS — Hardware Driver Setup & Service Config
+#  Configures services and parameters for: WiFi, Bluetooth, GPU, 
+#  Audio, Touchpad, Webcam, USB, Printers, and Power Management
+#  Runs inside chroot during ISO build
+# ============================================================
+
+set -e
+echo ""
+echo "============================================"
+echo "  Amit OS — Hardware Driver & Service Setup"
+echo "============================================"
+
+# ── Touchpad & Input Devices Config ──────────────────────────
+echo "[Drivers] Configuring input devices (touchpad tapping & natural scrolling)..."
+
+# Touchpad config - natural scroll, tap to click
+mkdir -p /etc/X11/xorg.conf.d
+cat > /etc/X11/xorg.conf.d/40-libinput.conf << 'EOF'
+Section "InputClass"
+    Identifier "libinput touchpad catchall"
+    MatchIsTouchpad "on"
+    MatchDevicePath "/dev/input/event*"
+    Driver "libinput"
+    Option "Tapping"              "on"
+    Option "TappingButtonMap"     "lrm"
+    Option "NaturalScrolling"     "true"
+    Option "ScrollMethod"         "twofinger"
+    Option "DisableWhileTyping"   "true"
+    Option "AccelSpeed"           "0.3"
+    Option "ClickMethod"          "clickfinger"
+EndSection
+
+Section "InputClass"
+    Identifier "libinput keyboard catchall"
+    MatchIsKeyboard "on"
+    MatchDevicePath "/dev/input/event*"
+    Driver "libinput"
+EndSection
+
+Section "InputClass"
+    Identifier "libinput pointer catchall"
+    MatchIsPointer "on"
+    MatchDevicePath "/dev/input/event*"
+    Driver "libinput"
+EndSection
+EOF
+echo "  OK: Touchpad configured"
+
+# ── Enable System Services ───────────────────────────────────
+echo "[Drivers] Enabling hardware and driver services..."
+
+systemctl enable NetworkManager.service 2>/dev/null || true
+systemctl enable bluetooth.service 2>/dev/null || true
+systemctl enable cups.service 2>/dev/null || true
+systemctl enable tlp.service 2>/dev/null || true
+systemctl enable acpid.service 2>/dev/null || true
+systemctl enable thermald.service 2>/dev/null || true
+systemctl enable ModemManager.service 2>/dev/null || true
+
+echo ""
+echo "============================================"
+echo "  Driver & Service Configuration Complete!"
+echo "============================================"
+

@@ -1,0 +1,21 @@
+# Build artifacts
+output/*.iso
+output/build.log
+cache/
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor
+.vscode/
+*.swp
+*.swo
+
+# WSL build temp
+/tmp/
+
+# Large service dump
+services.txt

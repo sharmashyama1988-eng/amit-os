@@ -1,0 +1,515 @@
+name: Build Amit OS ISO
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build-iso:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Free Disk Space
+        run: |
+          echo "::group::Freeing disk space..."
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache
+          sudo apt-get purge -y google-cloud-cli azure-cli microsoft-edge-stable dotnet* || true
+          sudo apt-get autoremove -y || true
+          sudo apt-get clean
+          df -h
+          echo "::endgroup::"
+
+      - name: Install Build Dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends \
+            live-build live-config live-boot \
+            debootstrap squashfs-tools xorriso \
+            grub-efi-amd64-bin grub-pc-bin mtools \
+            syslinux isolinux syslinux-common \
+            wget curl git python3 dos2unix
+
+      - name: Convert Line Endings
+        run: |
+          find . -name "*.sh" -exec dos2unix {} \;
+          find . -name "*.hook.chroot" -exec dos2unix {} \;
+
+      - name: Setup Build Environment
+        run: |
+          BUILD_DIR="/tmp/amitos-build"
+          sudo mkdir -p "$BUILD_DIR"
+          sudo mkdir -p "$BUILD_DIR/cache"
+          cd "$BUILD_DIR"
+
+          # Configure live-build
+          sudo lb config --mode debian \
+            --distribution bookworm \
+            --architecture amd64 \
+            --mirror-bootstrap "http://deb.debian.org/debian" \
+            --mirror-binary "http://deb.debian.org/debian" \
+            --linux-packages "linux-image" \
+            --linux-flavours "amd64" \
+            --binary-images iso-hybrid \
+            --compression gzip \
+            --bootappend-live "boot=live components quiet splash hostname=amitos username=amit" \
+            --iso-volume "AmitOS 1.0" \
+            --iso-publisher "Amit" \
+            --iso-application "Amit OS - Fast Secure Linux" \
+            --debian-installer false \
+            --firmware-binary true \
+            --firmware-chroot true \
+            --apt-options "--yes --allow-downgrades --allow-remove-essential --allow-change-held-packages -o Acquire::Retries=3 -o Acquire::AllowInsecureRepositories=true -o APT::Get::AllowUnauthenticated=true -o APT::Immediate-Configure=0" \
+            --apt-secure false \
+            --memtest none \
+            --win32-loader false
+
+          # Disable security mirror (avoids Bookworm URL issues)
+          sudo sed -i 's/^LB_SECURITY=.*/LB_SECURITY="false"/' config/chroot
+          sudo sed -i 's|^LB_PARENT_MIRROR_CHROOT_SECURITY=.*|LB_PARENT_MIRROR_CHROOT_SECURITY=""|' config/chroot
+          sudo sed -i 's|^LB_PARENT_MIRROR_BINARY_SECURITY=.*|LB_PARENT_MIRROR_BINARY_SECURITY=""|' config/chroot
+          sudo sed -i 's|^LB_MIRROR_CHROOT_SECURITY=.*|LB_MIRROR_CHROOT_SECURITY=""|' config/chroot
+          sudo sed -i 's|^LB_MIRROR_BINARY_SECURITY=.*|LB_MIRROR_BINARY_SECURITY=""|' config/chroot
+
+          # Hot-patch live-build for Debian Bookworm Contents URL shift
+          sudo find /usr/lib/live/build/ -type f -exec sed -i 's|dists/\([^/]*\)/Contents-\([^/]*\).gz|dists/\1/main/Contents-\2.gz|g' {} + 2>/dev/null || true
+          sudo find /usr/lib/live/build/ -type f -exec sed -i 's|main/main|main|g' {} + 2>/dev/null || true
+
+      - name: Sync Project Files
+        run: |
+          BUILD_DIR="/tmp/amitos-build"
+          REPO="${GITHUB_WORKSPACE}"
+
+          # Create directory structure
+          sudo mkdir -p "$BUILD_DIR/config/includes.chroot/etc/apt"
+          sudo mkdir -p "$BUILD_DIR/config/includes.chroot/usr/local/amitos/apps"
+          sudo mkdir -p "$BUILD_DIR/config/includes.chroot/usr/local/amitos/branding"
+          sudo mkdir -p "$BUILD_DIR/config/includes.chroot/usr/local/amitos/core"
+          sudo mkdir -p "$BUILD_DIR/config/hooks/normal"
+          sudo mkdir -p "$BUILD_DIR/config/includes.chroot/usr/local/bin"
+          sudo mkdir -p "$BUILD_DIR/config/includes.chroot/etc/amitshield"
+          sudo mkdir -p "$BUILD_DIR/config/includes.chroot/etc/systemd/system"
+          sudo mkdir -p "$BUILD_DIR/config/includes.chroot/usr/share/applications"
+
+          # Sync custom assets
+          sudo cp -r "$REPO/branding/"* "$BUILD_DIR/config/includes.chroot/usr/local/amitos/branding/" 2>/dev/null || true
+          sudo cp -r "$REPO/apps/"* "$BUILD_DIR/config/includes.chroot/usr/local/amitos/apps/" 2>/dev/null || true
+          sudo cp -r "$REPO/core/"* "$BUILD_DIR/config/includes.chroot/usr/local/amitos/core/" 2>/dev/null || true
+          sudo cp -r "$REPO/themes/"* "$BUILD_DIR/config/includes.chroot/usr/share/themes/" 2>/dev/null || true
+
+          # Sync custom hooks and config
+          sudo cp -r "$REPO/config/"* "$BUILD_DIR/config/" 2>/dev/null || true
+
+          # Copy AmitShield UI
+          sudo cp "$REPO/amitshield/amitshield-ui.py" "$BUILD_DIR/config/includes.chroot/usr/local/amitos/apps/amitshield-ui.py" 2>/dev/null || true
+
+          # Copy bridge module
+          sudo cp -r "$REPO/bridge/"* "$BUILD_DIR/config/includes.chroot/usr/local/amitos/core/" 2>/dev/null || true
+
+          # Ensure hooks are executable
+          sudo chmod +x "$BUILD_DIR/config/hooks/normal/"*.hook.chroot 2>/dev/null || true
+
+      - name: Create Package List
+        run: |
+          BUILD_DIR="/tmp/amitos-build"
+          sudo mkdir -p "$BUILD_DIR/config/package-lists"
+          sudo tee "$BUILD_DIR/config/package-lists/amitos.list.chroot" > /dev/null << 'PKGS'
+          # Desktop
+          kde-plasma-desktop
+          plasma-workspace
+          plasma-nm
+          kscreen
+          powerdevil
+          sddm
+          sddm-theme-breeze
+          breeze
+          breeze-gtk-theme
+          kwin-x11
+          xorg
+          xserver-xorg
+
+          # 15 Apps
+          chromium
+          qalculate-gtk
+          gnome-calendar
+          dolphin
+          konsole
+          kate
+          vlc
+          gwenview
+          rhythmbox
+          kde-spectacle
+          plasma-systemmonitor
+          ksystemstats
+          ark
+          okular
+          knotes
+          libreoffice-writer
+          libreoffice-calc
+
+          # Security (AmitShield deps)
+          ufw
+          gufw
+          apparmor
+          apparmor-profiles
+          apparmor-utils
+          clamav
+          clamtk
+          rkhunter
+          fail2ban
+          unattended-upgrades
+
+          # Fonts & UI
+          fonts-noto
+          fonts-noto-color-emoji
+          fonts-open-sans
+          fonts-hack
+          fonts-inter
+
+          # Networking
+          network-manager
+          network-manager-gnome
+          curl
+          wget
+          net-tools
+          network-manager-openvpn
+          network-manager-vpnc
+          network-manager-pptp
+          modemmanager
+          mobile-broadband-provider-info
+
+          # Multimedia codecs
+          gstreamer1.0-plugins-good
+          gstreamer1.0-plugins-bad
+          gstreamer1.0-plugins-ugly
+          gstreamer1.0-libav
+          ffmpeg
+          libavcodec-extra
+
+          # Kernel & Core
+          linux-image-amd64
+          linux-headers-amd64
+          live-boot
+          live-config
+          live-config-systemd
+
+          # Python GUI & Tray Runtimes
+          python3-gi
+          python3-gi-cairo
+          gir1.2-gtk-3.0
+          gir1.2-gtk-4.0
+          gir1.2-adw-1
+          gir1.2-ayatanaappindicator3-0.1
+
+          # Compiler (native C++ core)
+          g++
+
+          # CPU Microcode
+          intel-microcode
+          amd64-microcode
+
+          # GPU Drivers
+          xserver-xorg-video-intel
+          libgl1-mesa-dri
+          mesa-vulkan-drivers
+          xserver-xorg-video-amdgpu
+          xserver-xorg-video-nouveau
+          firmware-misc-nonfree
+          xserver-xorg-video-fbdev
+          xserver-xorg-video-vesa
+
+          # WiFi & Bluetooth Firmware
+          firmware-iwlwifi
+          firmware-realtek
+          firmware-atheros
+          wpasupplicant
+          wireless-tools
+          iw
+          rfkill
+          bluetooth
+          bluez
+          bluez-tools
+          bluedevil
+          blueman
+
+          # Audio & Multimedia
+          alsa-utils
+          pulseaudio
+          pavucontrol
+          plasma-pa
+          pipewire
+          pipewire-pulse
+          pipewire-alsa
+          wireplumber
+
+          # Touchpad & Input
+          xserver-xorg-input-libinput
+          xserver-xorg-input-synaptics
+          libinput-tools
+
+          # USB & File Systems
+          ntfs-3g
+          exfatprogs
+          dosfstools
+          btrfs-progs
+          udisks2
+          gvfs
+          gvfs-backends
+
+          # Webcam
+          v4l-utils
+
+          # Printers & Scanners
+          cups
+          cups-filters
+          system-config-printer
+          hplip
+          sane-utils
+          simple-scan
+
+          # Power Management
+          acpi
+          acpid
+          tlp
+          thermald
+          cpufrequtils
+          laptop-mode-tools
+
+          # Utilities
+          gparted
+          timeshift
+          python3
+          python3-dbus
+          p7zip-full
+          zip
+          unzip
+          htop
+          nano
+          bash-completion
+          pciutils
+          usbutils
+          dctrl-tools
+          resolvconf
+          zenity
+
+          # Installer
+          calamares
+          PKGS
+
+          # Clean leading whitespace from heredoc indentation
+          sudo sed -i 's/^          //' "$BUILD_DIR/config/package-lists/amitos.list.chroot"
+
+      - name: Create AmitShield Daemon
+        run: |
+          BUILD_DIR="/tmp/amitos-build"
+          sudo tee "$BUILD_DIR/config/includes.chroot/usr/local/bin/amitshield" > /dev/null << 'SHIELD'
+          #!/usr/bin/env python3
+          """AmitShield Security Engine — Amit OS"""
+          import os, sys, time, re, subprocess, threading, json, logging
+          from datetime import datetime
+
+          logging.basicConfig(filename='/var/log/amitshield.log',
+              format='%(asctime)s [%(levelname)s] %(message)s', level=logging.INFO)
+          log = logging.getLogger('amitshield')
+
+          SUSPICIOUS = [r'xmrig',r'minerd',r'cpuminer',r'nc -e',r'/dev/tcp/',
+                        r'wget.*\|.*bash',r'curl.*\|.*bash']
+          DANGEROUS_PORTS = {23,135,137,139,445,3389,5900,4444,1337}
+          PROTECTED = {'systemd','sddm','plasmashell','kwin_x11','dbus-daemon',
+                       'NetworkManager','amitshield'}
+
+          def setup_firewall():
+              cmds = [['ufw','default','deny','incoming'],
+                      ['ufw','default','allow','outgoing'],
+                      ['ufw','allow','ssh'],['ufw','allow','80/tcp'],
+                      ['ufw','allow','443/tcp'],['ufw','--force','enable']]
+              for c in cmds:
+                  subprocess.run(c, capture_output=True)
+              for p in DANGEROUS_PORTS:
+                  subprocess.run(['ufw','deny',str(p)], capture_output=True)
+              log.info('Firewall active')
+
+          def scan_processes():
+              import glob
+              for pid_path in glob.glob('/proc/[0-9]*/cmdline'):
+                  try:
+                      pid = int(pid_path.split('/')[2])
+                      with open(pid_path,'rb') as f:
+                          cmd = f.read().replace(b'\x00',b' ').decode(errors='replace')
+                      name_path = f'/proc/{pid}/comm'
+                      name = open(name_path).read().strip() if os.path.exists(name_path) else ''
+                      if name in PROTECTED: continue
+                      for pat in SUSPICIOUS:
+                          if re.search(pat, cmd, re.IGNORECASE):
+                              log.warning(f'THREAT PID:{pid} NAME:{name} — suspended')
+                              os.kill(pid, 19)
+                              subprocess.Popen(['notify-send','--urgency=critical',
+                                  'AmitShield Alert',f'Threat blocked: {name} [PID:{pid}]'])
+                              break
+                  except Exception: pass
+
+          def main():
+              log.info('=== AmitShield v1.0 starting ===')
+              setup_firewall()
+              scan = 0
+              while True:
+                  scan += 1
+                  scan_processes()
+                  log.info(f'Scan #{scan} complete')
+                  time.sleep(30)
+
+          if __name__ == '__main__':
+              main()
+          SHIELD
+          sudo chmod +x "$BUILD_DIR/config/includes.chroot/usr/local/bin/amitshield"
+
+          # AmitShield systemd service
+          sudo tee "$BUILD_DIR/config/includes.chroot/etc/systemd/system/amitshield.service" > /dev/null << 'SVC'
+          [Unit]
+          Description=AmitShield Security Engine
+          After=network.target
+          [Service]
+          Type=simple
+          ExecStart=/usr/local/bin/amitshield
+          Restart=on-failure
+          RestartSec=5s
+          [Install]
+          WantedBy=multi-user.target
+          SVC
+
+      - name: Create Desktop Shortcuts
+        run: |
+          BUILD_DIR="/tmp/amitos-build"
+          APPS="$BUILD_DIR/config/includes.chroot/usr/share/applications"
+          sudo mkdir -p "$APPS"
+
+          sudo tee "$APPS/amitbrowser.desktop" > /dev/null << 'E'
+          [Desktop Entry]
+          Name=AmitBrowser
+          Exec=chromium --no-sandbox %U
+          Icon=chromium
+          Type=Application
+          Categories=Network;WebBrowser;
+          E
+
+          sudo tee "$APPS/amitcalc.desktop" > /dev/null << 'E'
+          [Desktop Entry]
+          Name=AmitCalc
+          Exec=qalculate-gtk
+          Icon=accessories-calculator
+          Type=Application
+          Categories=Utility;Calculator;
+          E
+
+          sudo tee "$APPS/amitfiles.desktop" > /dev/null << 'E'
+          [Desktop Entry]
+          Name=AmitFiles
+          Exec=dolphin
+          Icon=system-file-manager
+          Type=Application
+          Categories=System;FileManager;
+          E
+
+          sudo tee "$APPS/amitshield-ui.desktop" > /dev/null << 'E'
+          [Desktop Entry]
+          Name=AmitShield
+          Exec=bash -c "pkexec env DISPLAY=$DISPLAY XAUTHORITY=$XAUTHORITY systemctl status amitshield | zenity --text-info --title='AmitShield Security'"
+          Icon=security-high
+          Type=Application
+          Categories=System;Security;
+          E
+
+      - name: Create DNS Fix Hook
+        run: |
+          BUILD_DIR="/tmp/amitos-build"
+          sudo tee "$BUILD_DIR/config/hooks/normal/0000-dns-fix.hook.chroot" > /dev/null << 'EOF'
+          #!/bin/bash
+          echo "nameserver 8.8.8.8" > /etc/resolv.conf
+          EOF
+          sudo chmod +x "$BUILD_DIR/config/hooks/normal/0000-dns-fix.hook.chroot"
+
+      - name: Create Super-Fix Hook
+        run: |
+          BUILD_DIR="/tmp/amitos-build"
+          sudo tee "$BUILD_DIR/config/hooks/normal/9999-super-fix.hook.chroot" > /dev/null << 'EOF'
+          #!/bin/bash
+          export DEBIAN_FRONTEND=noninteractive
+          echo "Running Super-Fix to repair any broken package states..."
+          dpkg --configure -a || true
+          apt-get install -f -y || true
+          [ -e /dev/null ] && rm -f /dev/null
+          mknod -m 666 /dev/null c 1 3
+          EOF
+          sudo chmod +x "$BUILD_DIR/config/hooks/normal/9999-super-fix.hook.chroot"
+
+      - name: Create Sources List
+        run: |
+          BUILD_DIR="/tmp/amitos-build"
+          sudo mkdir -p "$BUILD_DIR/config/includes.chroot/etc/apt"
+          sudo tee "$BUILD_DIR/config/includes.chroot/etc/apt/sources.list" > /dev/null << 'EOF'
+          deb http://deb.debian.org/debian bookworm main contrib non-free non-free-firmware
+          deb http://security.debian.org/debian-security bookworm-security main contrib non-free non-free-firmware
+          deb http://deb.debian.org/debian bookworm-updates main contrib non-free non-free-firmware
+          EOF
+
+      - name: Copy Boot Files
+        run: |
+          BUILD_DIR="/tmp/amitos-build"
+          sudo mkdir -p "$BUILD_DIR/config/binary_local-includes/isolinux"
+          for f in /usr/lib/ISOLINUX/isolinux.bin \
+                   /usr/lib/syslinux/modules/bios/vesamenu.c32 \
+                   /usr/lib/syslinux/modules/bios/ldlinux.c32 \
+                   /usr/lib/syslinux/modules/bios/libcom32.c32 \
+                   /usr/lib/syslinux/modules/bios/libutil.c32 \
+                   /usr/lib/syslinux/modules/bios/menu.c32 \
+                   /usr/lib/syslinux/modules/bios/chain.c32; do
+              if [ -f "$f" ]; then
+                  sudo cp "$f" "$BUILD_DIR/config/binary_local-includes/isolinux/"
+                  echo "  [OK] Copied $(basename "$f")"
+              else
+                  echo "  [SKIP] $f not found"
+              fi
+          done
+
+      - name: Build ISO
+        run: |
+          BUILD_DIR="/tmp/amitos-build"
+          cd "$BUILD_DIR"
+
+          # Strip leading whitespace from all hooks (heredoc indentation artifact)
+          for f in config/hooks/normal/*.hook.chroot; do
+            sudo sed -i 's/^          //' "$f" 2>/dev/null || true
+          done
+
+          echo "=== Starting lb build ==="
+          sudo lb build 2>&1 | tail -50
+
+      - name: Upload ISO Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: amit-os-1.0-amd64
+          path: /tmp/amitos-build/*.iso
+          retention-days: 7
+          compression-level: 0
+
+      - name: Create Release
+        if: github.ref == 'refs/heads/main'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v1.0-build-${{ github.run_number }}
+          name: "Amit OS 1.0 Build #${{ github.run_number }}"
+          body: |
+            ## Amit OS 1.0 - Automated Build
+            
+            🔒 **Security**: AmitShield Engine with real-time threat detection
+            🎨 **Desktop**: KDE Plasma with Breeze Dark theme
+            📱 **Apps**: 15+ custom apps included
+            
+            Built from commit: ${{ github.sha }}
+          files: /tmp/amitos-build/*.iso
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -1,0 +1,102 @@
+# ============================================================
+#  AMIT OS — KDE Plasma Taskbar Configuration
+#  Windows-like: Bottom panel, Start menu, Taskbar, System Tray
+#  File goes in: /etc/skel/.config/plasma-org.kde.plasma.desktop-appletsrc
+# ============================================================
+
+[ActionPlugins][0]
+RightButton;NoModifier=org.kde.contextmenu
+
+[ActionPlugins][1]
+RightButton;NoModifier=org.kde.contextmenu
+
+[Containments][1]
+activityId=
+formfactor=0
+immutability=1
+lastScreen=0
+location=0
+plugin=org.kde.plasma.folder
+wallpaperplugin=org.kde.image
+
+[Containments][1][Applets][2]
+immutability=1
+plugin=org.kde.plasma.analogclock
+
+[Containments][1][Wallpaper][org.kde.image][General]
+Image=/usr/share/amitos/wallpapers/amitos-wallpaper.jpg
+SlidePaths=/usr/share/wallpapers/
+
+# ── BOTTOM PANEL (Windows Taskbar) ──────────────────────────
+[Containments][2]
+activityId=
+formfactor=2
+immutability=1
+lastScreen=0
+location=4
+plugin=org.kde.panel
+wallpaperplugin=org.kde.image
+
+[Containments][2][General]
+AppletOrder=3;4;5;6;7;8;9;10;11
+
+# ── Start Menu (Application Launcher) ──────────────────────
+[Containments][2][Applets][3]
+immutability=1
+plugin=org.kde.plasma.kickoff
+
+[Containments][2][Applets][3][Configuration][General]
+favoriteApps=applications:amitbrowser.desktop,applications:amitfiles.desktop,applications:amittext.desktop,applications:amitcalc.desktop,applications:amitstore.desktop,applications:amitsettings.desktop
+icon=amitos-logo
+showButtonIcon=true
+systemApplications=applications:amitsettings.desktop,applications:amitmonitor.desktop
+
+# ── Taskbar (shows open windows) ───────────────────────────
+[Containments][2][Applets][4]
+immutability=1
+plugin=org.kde.plasma.icontasks
+
+[Containments][2][Applets][4][Configuration][General]
+launchers=applications:amitbrowser.desktop,applications:amitfiles.desktop,applications:amitterminal.desktop,applications:amittext.desktop
+showOnlyCurrentActivity=true
+showOnlyCurrentDesktop=true
+iconSize=2
+
+# ── Spacer ──────────────────────────────────────────────────
+[Containments][2][Applets][5]
+immutability=1
+plugin=org.kde.plasma.panelspacer
+
+# ── System Tray (WiFi, BT, Volume, Battery, Notifications) ─
+[Containments][2][Applets][6]
+immutability=1
+plugin=org.kde.plasma.systemtray
+
+[Containments][2][Applets][6][Configuration]
+extraItems=org.kde.plasma.bluetooth,org.kde.plasma.networkmanager,org.kde.plasma.volume,org.kde.plasma.battery,org.kde.plasma.notifications,org.kde.plasma.devicenotifier,org.kde.clipboard
+hiddenItems=
+
+[Containments][2][Applets][6][Configuration][General]
+extraItems=org.kde.plasma.bluetooth,org.kde.plasma.networkmanager,org.kde.plasma.volume,org.kde.plasma.battery,org.kde.plasma.notifications,org.kde.plasma.devicenotifier
+knownItems=org.kde.plasma.bluetooth,org.kde.plasma.networkmanager,org.kde.plasma.volume,org.kde.plasma.battery,org.kde.plasma.notifications,org.kde.plasma.devicenotifier,org.kde.clipboard,org.kde.plasma.keyboardlayout
+
+# ── Digital Clock ────────────────────────────────────────────
+[Containments][2][Applets][7]
+immutability=1
+plugin=org.kde.plasma.digitalclock
+
+[Containments][2][Applets][7][Configuration][Appearance]
+dateFormat=shortDate
+dateDisplayFormat=BesideTime
+fontWeight=50
+showDate=true
+showSeconds=false
+use24hFormat=2
+
+# ── Show Desktop Button ─────────────────────────────────────
+[Containments][2][Applets][8]
+immutability=1
+plugin=org.kde.plasma.showdesktop
+
+[Containments][2][General]
+extraItems=org.kde.plasma.bluetooth,org.kde.plasma.networkmanager

@@ -1,0 +1,440 @@
+#!/bin/bash
+# ============================================================
+#  AMIT OS — Post-Installation Hook
+#  Runs inside chroot after all packages are installed
+#  Sets up AmitShield, themes, apps, and system branding
+# ============================================================
+
+set -e
+echo "╔══════════════════════════════════════════╗"
+echo "║   Amit OS — Post-Install Configuration  ║"
+echo "╚══════════════════════════════════════════╝"
+
+# ─── System Identity ─────────────────────────────────────────
+echo "AmitOS" > /etc/hostname
+cat > /etc/os-release << 'EOF'
+PRETTY_NAME="Amit OS 1.0"
+NAME="AmitOS"
+VERSION_ID="1.0"
+VERSION="1.0 (Bedrock)"
+VERSION_CODENAME=bedrock
+ID=amitos
+ID_LIKE=debian
+HOME_URL="https://amitos.dev"
+SUPPORT_URL="https://amitos.dev/support"
+BUG_REPORT_URL="https://amitos.dev/bugs"
+LOGO=amitos-logo
+EOF
+
+# ─── Hosts file ──────────────────────────────────────────────
+cat > /etc/hosts << 'EOF'
+127.0.0.1   localhost
+127.0.1.1   amitos
+::1         localhost ip6-localhost ip6-loopback
+ff02::1     ip6-allnodes
+ff02::2     ip6-allrouters
+EOF
+
+# ─── Locale & Timezone ───────────────────────────────────────
+locale-gen en_US.UTF-8 hi_IN.UTF-8 || true
+update-locale LANG=en_US.UTF-8
+ln -sf /usr/share/zoneinfo/Asia/Kolkata /etc/localtime || true
+
+# ─── Install AmitShield ──────────────────────────────────────
+echo "[AmitShield] Installing Security Engine..."
+mkdir -p /etc/amitshield /var/log/amitshield /usr/local/bin
+chmod 755 /usr/local/bin/amitshield.py 2>/dev/null || true
+chmod 755 /usr/local/bin/amitshield-ui.py 2>/dev/null || true
+
+# Create preflight script
+cat > /usr/local/bin/amitshield-preflight.sh << 'PREFLIGHT'
+#!/bin/bash
+# AmitShield pre-flight checks
+mkdir -p /etc/amitshield /var/log
+touch /var/log/amitshield.log
+chmod 600 /var/log/amitshield.log
+echo "AmitShield pre-flight OK" >> /var/log/amitshield.log
+PREFLIGHT
+chmod +x /usr/local/bin/amitshield-preflight.sh
+
+# Install systemd service
+if [ -f /usr/local/bin/amitshield.service ]; then
+    cp /usr/local/bin/amitshield.service /etc/systemd/system/
+fi
+systemctl enable amitshield.service 2>/dev/null || true
+
+# ─── Desktop App Shortcuts ───────────────────────────────────
+echo "[Apps] Creating .desktop shortcuts..."
+APPS_DIR="/usr/share/applications"
+
+# AmitShield UI
+cat > "$APPS_DIR/amitshield.desktop" << 'EOF'
+[Desktop Entry]
+Name=AmitShield
+Comment=Amit OS Security Center
+Exec=python3 /usr/local/bin/amitshield-ui.py
+Icon=security-high
+Terminal=false
+Type=Application
+Categories=System;Security;
+Keywords=security;shield;firewall;antivirus;
+StartupNotify=true
+EOF
+
+# AmitBrowser → Chromium
+cat > "$APPS_DIR/amitbrowser.desktop" << 'EOF'
+[Desktop Entry]
+Name=AmitBrowser
+Comment=Fast, Secure Web Browser
+Exec=chromium --no-sandbox %U
+Icon=chromium
+Terminal=false
+Type=Application
+Categories=Network;WebBrowser;
+MimeType=text/html;text/xml;application/xhtml+xml;
+EOF
+
+# AmitCalc
+cat > "$APPS_DIR/amitcalc.desktop" << 'EOF'
+[Desktop Entry]
+Name=AmitCalc
+Comment=Scientific Calculator
+Exec=qalculate-gtk
+Icon=accessories-calculator
+Terminal=false
+Type=Application
+Categories=Utility;Calculator;
+EOF
+
+# AmitCalendar
+cat > "$APPS_DIR/amitcalendar.desktop" << 'EOF'
+[Desktop Entry]
+Name=AmitCalendar
+Comment=Calendar and Events
+Exec=gnome-calendar
+Icon=x-office-calendar
+Terminal=false
+Type=Application
+Categories=Office;Calendar;
+EOF
+
+# AmitFiles
+cat > "$APPS_DIR/amitfiles.desktop" << 'EOF'
+[Desktop Entry]
+Name=AmitFiles
+Comment=File Manager
+Exec=dolphin
+Icon=system-file-manager
+Terminal=false
+Type=Application
+Categories=System;FileManager;
+EOF
+
+# AmitTerminal
+cat > "$APPS_DIR/amitterminal.desktop" << 'EOF'
+[Desktop Entry]
+Name=AmitTerminal
+Comment=Terminal Emulator
+Exec=konsole
+Icon=utilities-terminal
+Terminal=false
+Type=Application
+Categories=System;TerminalEmulator;
+EOF
+
+# AmitText
+cat > "$APPS_DIR/amittext.desktop" << 'EOF'
+[Desktop Entry]
+Name=AmitText
+Comment=Text and Code Editor
+Exec=kate %F
+Icon=accessories-text-editor
+Terminal=false
+Type=Application
+Categories=Utility;TextEditor;
+MimeType=text/plain;
+EOF
+
+# AmitMedia
+cat > "$APPS_DIR/amitmedia.desktop" << 'EOF'
+[Desktop Entry]
+Name=AmitMedia
+Comment=Video Player
+Exec=vlc %U
+Icon=vlc
+Terminal=false
+Type=Application
+Categories=AudioVideo;Player;
+MimeType=video/*;audio/*;
+EOF
+
+# AmitPhotos
+cat > "$APPS_DIR/amitphotos.desktop" << 'EOF'
+[Desktop Entry]
+Name=AmitPhotos
+Comment=Image Viewer
+Exec=gwenview %U
+Icon=gwenview
+Terminal=false
+Type=Application
+Categories=Graphics;Viewer;
+MimeType=image/*;
+EOF
+
+# AmitMusic
+cat > "$APPS_DIR/amitmusic.desktop" << 'EOF'
+[Desktop Entry]
+Name=AmitMusic
+Comment=Music Player
+Exec=rhythmbox
+Icon=rhythmbox
+Terminal=false
+Type=Application
+Categories=AudioVideo;Audio;Player;Music;
+EOF
+
+# AmitCapture (Screenshot)
+cat > "$APPS_DIR/amitcapture.desktop" << 'EOF'
+[Desktop Entry]
+Name=AmitCapture
+Comment=Screenshot Tool
+Exec=spectacle
+Icon=spectacle
+Terminal=false
+Type=Application
+Categories=Graphics;
+EOF
+
+# AmitMonitor
+cat > "$APPS_DIR/amitmonitor.desktop" << 'EOF'
+[Desktop Entry]
+Name=AmitMonitor
+Comment=System Resource Monitor
+Exec=ksysguard
+Icon=utilities-system-monitor
+Terminal=false
+Type=Application
+Categories=System;Monitor;
+EOF
+
+# AmitArchive
+cat > "$APPS_DIR/amitarchive.desktop" << 'EOF'
+[Desktop Entry]
+Name=AmitArchive
+Comment=Archive Manager
+Exec=ark %U
+Icon=ark
+Terminal=false
+Type=Application
+Categories=Utility;Archiving;Compression;
+MimeType=application/zip;application/x-tar;application/x-7z-compressed;
+EOF
+
+# AmitPDF
+cat > "$APPS_DIR/amitpdf.desktop" << 'EOF'
+[Desktop Entry]
+Name=AmitPDF
+Comment=PDF Document Viewer
+Exec=okular %U
+Icon=okular
+Terminal=false
+Type=Application
+Categories=Graphics;Office;Viewer;
+MimeType=application/pdf;
+EOF
+
+# AmitNotes
+cat > "$APPS_DIR/amitnotes.desktop" << 'EOF'
+[Desktop Entry]
+Name=AmitNotes
+Comment=Quick Notes and Reminders
+Exec=knotes
+Icon=knotes
+Terminal=false
+Type=Application
+Categories=Utility;
+EOF
+
+# AmitOffice
+cat > "$APPS_DIR/amitoffice.desktop" << 'EOF'
+[Desktop Entry]
+Name=AmitOffice
+Comment=Office Suite — Writer, Calc, Impress
+Exec=libreoffice --writer
+Icon=libreoffice-startcenter
+Terminal=false
+Type=Application
+Categories=Office;
+EOF
+
+# AmitSettings
+cat > "$APPS_DIR/amitsettings.desktop" << 'EOF'
+[Desktop Entry]
+Name=AmitSettings
+Comment=System Control Panel
+Exec=systemsettings5
+Icon=preferences-system
+Terminal=false
+Type=Application
+Categories=System;Settings;
+EOF
+
+echo "[Apps] All desktop shortcuts created ✓"
+
+# ─── KDE Plasma Configuration ────────────────────────────────
+echo "[KDE] Configuring Windows-like layout..."
+mkdir -p /etc/skel/.config
+
+# Configure SDDM
+mkdir -p /etc/sddm.conf.d
+cat > /etc/sddm.conf.d/amitos.conf << 'EOF'
+[Theme]
+Current=breeze
+[Autologin]
+Relogin=false
+[General]
+DisplayServer=x11
+HaltCommand=/usr/bin/systemctl poweroff
+RebootCommand=/usr/bin/systemctl reboot
+EOF
+
+# KDE task manager — Windows-like (taskbar at bottom)
+mkdir -p /etc/skel/.config/plasma-org.kde.plasma.desktop-appletsrc
+cat > /etc/skel/.config/kwinrc << 'EOF'
+[Compositing]
+AnimationSpeed=4
+Backend=OpenGL
+Enabled=true
+GLCore=true
+GLPreferBufferSwap=a
+GLTextureFilter=2
+HiddenPreviews=5
+OpenGLIsUnsafe=false
+UnredirectFullscreen=false
+
+[Windows]
+BorderSnapZone=10
+CenterSnapZone=0
+WindowSnapZone=10
+
+[Effect-Blur]
+BlurStrength=15
+NoiseStrength=0
+
+[Effect-overview]
+BorderActivate=9
+
+[TabBox]
+LayoutName=breeze
+EOF
+
+cat > /etc/skel/.config/kdeglobals << 'EOF'
+[General]
+ColorScheme=BreezeDark
+Name=Breeze Dark
+XftAntialias=true
+XftHintStyle=hintslight
+XftSubPixel=rgb
+fixed=Monospace,10,-1,5,50,0,0,0,0,0
+font=Noto Sans,10,-1,5,50,0,0,0,0,0
+menuFont=Noto Sans,10,-1,5,50,0,0,0,0,0
+smallestReadableFont=Noto Sans,8,-1,5,50,0,0,0,0,0
+toolBarFont=Noto Sans,10,-1,5,50,0,0,0,0,0
+
+[Icons]
+Theme=breeze-dark
+
+[KDE]
+LookAndFeelPackage=org.kde.breezedark.desktop
+SingleClick=false
+AnimationDurationFactor=1
+EOF
+
+# ─── Security Hardening ──────────────────────────────────────
+echo "[Security] Applying AmitOS hardening..."
+
+# Sysctl security params
+cat >> /etc/sysctl.conf << 'EOF'
+# AmitOS Security Hardening
+net.ipv4.conf.all.rp_filter = 1
+net.ipv4.conf.default.rp_filter = 1
+net.ipv4.tcp_syncookies = 1
+net.ipv4.conf.all.accept_redirects = 0
+net.ipv4.conf.default.accept_redirects = 0
+net.ipv4.conf.all.send_redirects = 0
+net.ipv4.conf.default.send_redirects = 0
+net.ipv4.icmp_echo_ignore_broadcasts = 1
+net.ipv4.icmp_ignore_bogus_error_responses = 1
+kernel.randomize_va_space = 2
+kernel.dmesg_restrict = 1
+fs.protected_hardlinks = 1
+fs.protected_symlinks = 1
+net.core.bpf_jit_harden = 2
+EOF
+
+# Password policy
+cat >> /etc/security/pwquality.conf << 'EOF'
+minlen = 10
+dcredit = -1
+ucredit = -1
+ocredit = -1
+lcredit = -1
+EOF
+
+# Configure fail2ban
+cat > /etc/fail2ban/jail.local << 'EOF'
+[DEFAULT]
+bantime  = 3600
+findtime = 600
+maxretry = 5
+backend = systemd
+
+[sshd]
+enabled = true
+port = ssh
+logpath = %(sshd_log)s
+EOF
+
+systemctl enable fail2ban   2>/dev/null || true
+systemctl enable apparmor   2>/dev/null || true
+systemctl enable auditd     2>/dev/null || true
+
+# ─── Unattended Upgrades ─────────────────────────────────────
+cat > /etc/apt/apt.conf.d/20auto-upgrades << 'EOF'
+APT::Periodic::Update-Package-Lists "1";
+APT::Periodic::Unattended-Upgrade "1";
+APT::Periodic::AutocleanInterval "7";
+EOF
+
+# ─── GRUB Branding ───────────────────────────────────────────
+cat >> /etc/default/grub << 'EOF'
+GRUB_DISTRIBUTOR="Amit OS"
+GRUB_TIMEOUT=5
+GRUB_TIMEOUT_STYLE=menu
+GRUB_CMDLINE_LINUX_DEFAULT="quiet splash loglevel=3 apparmor=1 security=apparmor"
+EOF
+update-grub 2>/dev/null || true
+
+# ─── Default user setup ──────────────────────────────────────
+# Create live user
+useradd -m -s /bin/bash -G sudo,audio,video,plugdev,netdev amit 2>/dev/null || true
+echo "amit:amitos" | chpasswd
+usermod -c "Amit" amit 2>/dev/null || true
+
+# ─── Performance Tuning ──────────────────────────────────────
+echo "[Performance] Optimizing system..."
+cat > /etc/systemd/system.conf.d/amitos.conf << 'EOF'
+[Manager]
+DefaultTimeoutStartSec=15s
+DefaultTimeoutStopSec=10s
+EOF
+
+# Preload for faster app launch
+apt-get install -y preload 2>/dev/null || true
+systemctl enable preload 2>/dev/null || true
+
+echo ""
+echo "╔══════════════════════════════════════════╗"
+echo "║  ✓ Amit OS Post-Install Complete!        ║"
+echo "║  Fast • Secure • Beautiful               ║"
+echo "╚══════════════════════════════════════════╝"

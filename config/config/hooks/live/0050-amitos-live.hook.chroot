@@ -1,0 +1,27 @@
+#!/bin/bash
+# ============================================================
+#  AMIT OS — Live System Boot Hook
+#  Runs at live session startup (before desktop loads)
+# ============================================================
+
+# ─── Start AmitShield in live mode ──────────────────────────
+if systemctl list-unit-files | grep -q amitshield; then
+    systemctl start amitshield &
+fi
+
+# ─── Set live session wallpaper ──────────────────────────────
+if [ -f /usr/share/amitos/wallpapers/amitos-wallpaper.jpg ]; then
+    su - amit -c "
+        DISPLAY=:0 DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1000/bus \
+        plasma-apply-wallpaperimage /usr/share/amitos/wallpapers/amitos-wallpaper.jpg
+    " 2>/dev/null || true
+fi
+
+# ─── Welcome notification ────────────────────────────────────
+sleep 5
+su - amit -c "
+    DISPLAY=:0 DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1000/bus \
+    notify-send --urgency=normal --icon=amitos-logo \
+    'Welcome to Amit OS 🎉' \
+    'Fast • Secure • Beautiful\nAmitShield is protecting your system.'
+" 2>/dev/null || true

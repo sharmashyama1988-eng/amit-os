@@ -1,0 +1,92 @@
+#!/bin/bash
+# ============================================================
+#  AMIT OS — Master Branding & Visual Engine
+#  Blur, 120FPS Animations, C++ Core, Premium Typography
+# ============================================================
+
+set -e
+echo "[Branding] Injecting Master Visual Identity..."
+
+BRANDING_DIR="/usr/share/amitos/branding"
+SKEL="/etc/skel/.config"
+mkdir -p "$BRANDING_DIR"
+mkdir -p "$SKEL"
+
+# ── 1. Copy Assets ───────────────────────────────────────────
+# Using internal synced paths from Step 2.5
+cp /usr/local/amitos/branding/wallpaper.png "$BRANDING_DIR/wallpaper.png" 2>/dev/null || true
+cp /usr/local/amitos/branding/logo.png "$BRANDING_DIR/logo.png" 2>/dev/null || true
+
+# ── 2. Global Aesthetics (Blur & Animations) ──────────────────
+cat > "$SKEL/kwinrc" << 'EOF'
+[Plugins]
+blurEnabled=true
+contrastEnabled=true
+translucencyEnabled=true
+
+[Effect-Blur]
+BlurRadius=12
+NoiseStrength=5
+
+[Effect-Translucency]
+Decoration=90
+Move=80
+EOF
+
+# Animation Duration (0.5 = Ultra Fast/120FPS Feel)
+cat > "$SKEL/kdeglobals" << 'EOF'
+[KDE]
+AnimationDurationFactor=0.5
+LookAndFeelPackage=org.kde.breeze.desktop
+
+[General]
+font=Inter,10,-1,5,50,0,0,0,0,0
+fixed=Hack,10,-1,5,50,0,0,0,0,0
+smallestReadableFont=Inter,8,-1,5,50,0,0,0,0,0
+toolBarFont=Inter,10,-1,5,50,0,0,0,0,0
+menuFont=Inter,10,-1,5,50,0,0,0,0,0
+EOF
+
+# ── 3. C++ AmitShield Core Compilation ──────────────────────
+echo "[Branding] Compiling AmitShield Native Core..."
+if [ -f /usr/local/amitos/core/amitshield_core.cpp ]; then
+    g++ -O3 -std=c++17 -shared -fPIC -pthread \
+        -o /usr/local/lib/libamitshield.so \
+        /usr/local/amitos/core/amitshield_core.cpp \
+        -lpthread
+    chmod 755 /usr/local/lib/libamitshield.so
+    ldconfig
+    echo "✓ AmitShield native core compiled successfully"
+else
+    echo "⚠ amitshield_core.cpp not found, skipping compilation"
+fi
+
+# ── 4. SDDM & Wallpaper ──────────────────────────────────────
+mkdir -p /etc/sddm.conf.d
+cat > /etc/sddm.conf.d/amitos.conf << 'EOF'
+[Theme]
+Current=breeze
+CursorTheme=breeze_cursors
+[Autologin]
+User=amit
+Session=plasma
+EOF
+
+# Link wallpaper for system default
+ln -sf "$BRANDING_DIR/wallpaper.png" /usr/share/wallpapers/Next/contents/images/1920x1080.png
+
+# ── 5. Shortcuts (Windows Style) ──────────────────────────────
+cat > "$SKEL/kglobalshortcutsrc" << 'EOF'
+[org.kde.dolphin.desktop]
+_launch=Meta+E
+
+[org.kde.konsole.desktop]
+_launch=Meta+T
+
+[plasmashell]
+activate task manager entry 1=Meta+1
+activate task manager entry 2=Meta+2
+activate task manager entry 3=Meta+3
+EOF
+
+echo "[Branding] Amit OS is now Premium and Optimized!"

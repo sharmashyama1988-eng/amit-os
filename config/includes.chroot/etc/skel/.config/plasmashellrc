@@ -1,0 +1,15 @@
+[General]
+lookAndFeelPackage=org.kde.breezedark.desktop
+
+[PlasmaViews][Panel 2]
+floating=0
+panelOpacity=1
+thickness=44
+
+[PlasmaViews][Panel 2][Defaults]
+maxLength=1920
+minLength=1920
+offset=0
+
+[ScreenMapping]
+screenMapping=

@@ -1,0 +1,16 @@
+{
+    "malware_patterns": [
+        "xmrig", "minerd", "cpuminer", "stratum+tcp",
+        "nc -e /bin/sh", "bash -i >& /dev/tcp",
+        "python -c 'import socket", "perl -e 'use Socket",
+        "wget http://*.sh | sh", "curl http://*.sh | sh"
+    ],
+    "suspicious_paths": [
+        "/tmp/.X11-unix", "/var/tmp/.ice-unix",
+        "/dev/shm/.font-unix", "/etc/cron.hourly/gcc.sh"
+    ],
+    "unauthorized_executables": [
+        "nmap", "wireshark", "aircrack-ng", "metasploit"
+    ],
+    "action": "SUSPEND_AND_NOTIFY"
+}
