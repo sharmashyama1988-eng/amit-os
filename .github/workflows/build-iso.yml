@@ -9,6 +9,8 @@ jobs:
   build-iso:
     runs-on: ubuntu-latest
     timeout-minutes: 120
+    permissions:
+      contents: write
 
     steps:
       - name: Checkout Repository
@@ -477,6 +479,7 @@ jobs:
 
       - name: Build ISO
         run: |
+          set -o pipefail
           BUILD_DIR="/tmp/amitos-build"
           cd "$BUILD_DIR"
 
@@ -486,7 +489,7 @@ jobs:
           done
 
           echo "=== Starting lb build ==="
-          sudo lb build 2>&1 | tail -50
+          sudo lb build
 
       - name: Upload ISO Artifact
         uses: actions/upload-artifact@v4
@@ -495,6 +498,7 @@ jobs:
           path: /tmp/amitos-build/*.iso
           retention-days: 7
           compression-level: 0
+          if-no-files-found: error
 
       - name: Create Release
         if: github.ref == 'refs/heads/main'
