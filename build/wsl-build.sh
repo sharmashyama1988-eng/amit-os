@@ -314,9 +314,8 @@ bluez-tools
 bluedevil
 blueman
 
-# Audio & Multimedia
+# Audio & Multimedia (Modern PipeWire configuration)
 alsa-utils
-pulseaudio
 pavucontrol
 plasma-pa
 pipewire
@@ -349,13 +348,12 @@ hplip
 sane-utils
 simple-scan
 
-# Power Management
+# Power Management (TLP prioritized for optimization)
 acpi
 acpid
 tlp
 thermald
 cpufrequtils
-laptop-mode-tools
 
 # Utilities
 gparted
