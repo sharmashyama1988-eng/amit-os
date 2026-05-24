@@ -374,6 +374,11 @@ zenity
 
 # Installer
 calamares
+
+# Bootloader dependencies inside chroot
+isolinux
+syslinux
+syslinux-common
 PKGS
 
 # Remove problematic packages that often fail in WSL/Chroot

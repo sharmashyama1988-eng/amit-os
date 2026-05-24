@@ -253,6 +253,11 @@ zenity
 
 # Installer
 calamares
+
+# Bootloader dependencies inside chroot
+isolinux
+syslinux
+syslinux-common
 PKGS
 
 echo -e "${YELLOW}Starting download phase... This will take time.${NC}"

@@ -299,6 +299,11 @@ jobs:
 
           # Installer
           calamares
+
+          # Bootloader dependencies inside chroot
+          isolinux
+          syslinux
+          syslinux-common
           PKGS
 
           # Clean leading whitespace from heredoc indentation
