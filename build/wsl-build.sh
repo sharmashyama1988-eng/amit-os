@@ -129,6 +129,7 @@ rm -rf .build .lock chroot binary
 lb config --mode debian \
     --distribution bookworm \
     --architecture amd64 \
+    --initsystem systemd \
     --mirror-bootstrap "http://deb.debian.org/debian" \
     --mirror-binary "http://deb.debian.org/debian" \
     --linux-packages "linux-image" \
@@ -530,6 +531,8 @@ rm -rf binary .build/binary*
 
 # GUARANTEED BOOT FILES: Copying from system to binary-includes
 # This is the most reliable way in WSL to ensure isolinux works
+mkdir -p config/bootloaders/isolinux
+mkdir -p config/includes.binary/isolinux
 mkdir -p config/binary_local-includes/isolinux
 for f in /usr/lib/ISOLINUX/isolinux.bin \
          /usr/lib/syslinux/modules/bios/vesamenu.c32 \
@@ -539,6 +542,8 @@ for f in /usr/lib/ISOLINUX/isolinux.bin \
          /usr/lib/syslinux/modules/bios/menu.c32 \
          /usr/lib/syslinux/modules/bios/chain.c32; do
     if [ -f "$f" ]; then
+        cp "$f" config/bootloaders/isolinux/
+        cp "$f" config/includes.binary/isolinux/
         cp "$f" config/binary_local-includes/isolinux/
         echo "  [OK] Copied $(basename "$f")"
     else
@@ -547,13 +552,15 @@ for f in /usr/lib/ISOLINUX/isolinux.bin \
 done
 
 # Fallback check
-if [ ! -f config/binary_local-includes/isolinux/isolinux.bin ]; then
+if [ ! -f config/includes.binary/isolinux/isolinux.bin ]; then
     warn "isolinux.bin not found in primary path, trying fallback..."
+    cp /usr/share/live/build/bootloaders/isolinux/isolinux.bin config/bootloaders/isolinux/ 2>/dev/null || true
+    cp /usr/share/live/build/bootloaders/isolinux/isolinux.bin config/includes.binary/isolinux/ 2>/dev/null || true
     cp /usr/share/live/build/bootloaders/isolinux/isolinux.bin config/binary_local-includes/isolinux/ 2>/dev/null || true
 fi
 
 # Final check before build
-if [ ! -f config/binary_local-includes/isolinux/isolinux.bin ]; then
+if [ ! -f config/includes.binary/isolinux/isolinux.bin ] && [ ! -f config/bootloaders/isolinux/isolinux.bin ] && [ ! -f config/binary_local-includes/isolinux/isolinux.bin ]; then
     fail "Critical boot files missing! Cannot build ISO."
 fi
 

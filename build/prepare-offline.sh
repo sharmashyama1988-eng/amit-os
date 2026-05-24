@@ -55,6 +55,7 @@ sudo mount --bind "$WIN_CACHE" cache
 lb config --mode debian \
     --distribution bookworm \
     --architecture amd64 \
+    --initsystem systemd \
     --mirror-bootstrap "http://deb.debian.org/debian" \
     --mirror-binary "http://deb.debian.org/debian" \
     --linux-packages "linux-image" \

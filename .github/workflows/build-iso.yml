@@ -52,6 +52,7 @@ jobs:
           sudo lb config --mode debian \
             --distribution bookworm \
             --architecture amd64 \
+            --initsystem systemd \
             --archive-areas "main contrib non-free non-free-firmware" \
             --mirror-bootstrap "http://deb.debian.org/debian" \
             --mirror-binary "http://deb.debian.org/debian" \
@@ -465,6 +466,8 @@ jobs:
       - name: Copy Boot Files
         run: |
           BUILD_DIR="/tmp/amitos-build"
+          sudo mkdir -p "$BUILD_DIR/config/bootloaders/isolinux"
+          sudo mkdir -p "$BUILD_DIR/config/includes.binary/isolinux"
           sudo mkdir -p "$BUILD_DIR/config/binary_local-includes/isolinux"
           for f in /usr/lib/ISOLINUX/isolinux.bin \
                    /usr/lib/syslinux/modules/bios/vesamenu.c32 \
@@ -474,6 +477,8 @@ jobs:
                    /usr/lib/syslinux/modules/bios/menu.c32 \
                    /usr/lib/syslinux/modules/bios/chain.c32; do
               if [ -f "$f" ]; then
+                  sudo cp "$f" "$BUILD_DIR/config/bootloaders/isolinux/"
+                  sudo cp "$f" "$BUILD_DIR/config/includes.binary/isolinux/"
                   sudo cp "$f" "$BUILD_DIR/config/binary_local-includes/isolinux/"
                   echo "  [OK] Copied $(basename "$f")"
               else

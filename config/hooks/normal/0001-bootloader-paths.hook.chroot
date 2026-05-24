@@ -1,0 +1,45 @@
+#!/bin/bash
+# ============================================================
+#  AMIT OS — Bootloader Path Compatibility Hook
+#  Resolves path differences between host (Ubuntu) and chroot (Debian)
+# ============================================================
+
+set -e
+echo "[Core] Resolving Bootloader Path Compatibility..."
+
+# Ensure target directories exist inside the chroot
+mkdir -p /usr/lib/syslinux/modules/bios
+mkdir -p /usr/lib/ISOLINUX
+
+# 1. Link isolinux.bin
+if [ -f /usr/lib/ISOLINUX/isolinux.bin ] && [ ! -f /usr/lib/syslinux/isolinux.bin ]; then
+    ln -sf /usr/lib/ISOLINUX/isolinux.bin /usr/lib/syslinux/isolinux.bin
+    echo "✓ Linked isolinux.bin to /usr/lib/syslinux/"
+elif [ -f /usr/lib/syslinux/isolinux.bin ] && [ ! -f /usr/lib/ISOLINUX/isolinux.bin ]; then
+    ln -sf /usr/lib/syslinux/isolinux.bin /usr/lib/ISOLINUX/isolinux.bin
+    echo "✓ Linked isolinux.bin to /usr/lib/ISOLINUX/"
+fi
+
+# 2. Link syslinux modules
+MODULES=(vesamenu.c32 ldlinux.c32 libcom32.c32 libutil.c32 menu.c32 chain.c32)
+for mod in "${MODULES[@]}"; do
+    # Search paths inside chroot
+    SRC=""
+    if [ -f "/usr/lib/syslinux/modules/bios/$mod" ]; then
+        SRC="/usr/lib/syslinux/modules/bios/$mod"
+    elif [ -f "/usr/lib/syslinux/$mod" ]; then
+        SRC="/usr/lib/syslinux/$mod"
+    fi
+
+    if [ -n "$SRC" ]; then
+        # Ensure it exists in both standard locations
+        if [ ! -f "/usr/lib/syslinux/$mod" ]; then
+            ln -sf "$SRC" "/usr/lib/syslinux/$mod"
+        fi
+        if [ ! -f "/usr/lib/syslinux/modules/bios/$mod" ]; then
+            ln -sf "$SRC" "/usr/lib/syslinux/modules/bios/$mod"
+        fi
+    fi
+done
+
+echo "✓ Bootloader paths successfully unified."
