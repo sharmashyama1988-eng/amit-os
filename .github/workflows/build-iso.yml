@@ -18,13 +18,11 @@ jobs:
 
       - name: Free Disk Space
         run: |
-          echo "::group::Freeing disk space..."
           sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache
           sudo apt-get purge -y google-cloud-cli azure-cli microsoft-edge-stable dotnet* || true
           sudo apt-get autoremove -y || true
           sudo apt-get clean
           df -h
-          echo "::endgroup::"
 
       - name: Install Build Dependencies
         run: |
@@ -34,7 +32,10 @@ jobs:
             debootstrap squashfs-tools xorriso \
             grub-efi-amd64-bin grub-pc-bin mtools \
             syslinux isolinux syslinux-common \
-            wget curl git python3 dos2unix
+            wget curl git python3 python3-pip dos2unix
+
+      - name: Install Python Imaging Library
+        run: pip3 install Pillow --quiet --break-system-packages || pip3 install Pillow --quiet
 
       - name: Convert Line Endings
         run: |
@@ -48,8 +49,8 @@ jobs:
           sudo mkdir -p "$BUILD_DIR/cache"
           cd "$BUILD_DIR"
 
-          # Configure live-build
-          sudo lb config --mode debian \
+          sudo lb config \
+            --mode debian \
             --distribution bookworm \
             --architecture amd64 \
             --initsystem systemd \
@@ -72,7 +73,7 @@ jobs:
             --memtest none \
             --win32-loader false
 
-          # Disable security mirror (avoids Bookworm URL issues)
+          # Disable security mirror
           sudo sed -i 's/^LB_SECURITY=.*/LB_SECURITY="false"/' config/chroot
           sudo sed -i 's|^LB_PARENT_MIRROR_CHROOT_SECURITY=.*|LB_PARENT_MIRROR_CHROOT_SECURITY=""|' config/chroot
           sudo sed -i 's|^LB_PARENT_MIRROR_BINARY_SECURITY=.*|LB_PARENT_MIRROR_BINARY_SECURITY=""|' config/chroot
@@ -80,15 +81,18 @@ jobs:
           sudo sed -i 's|^LB_MIRROR_BINARY_SECURITY=.*|LB_MIRROR_BINARY_SECURITY=""|' config/chroot
 
           # Hot-patch live-build for Debian Bookworm Contents URL shift
-          sudo find /usr/lib/live/build/ -type f -exec sed -i 's|dists/\([^/]*\)/Contents-\([^/]*\).gz|dists/\1/main/Contents-\2.gz|g' {} + 2>/dev/null || true
-          sudo find /usr/lib/live/build/ -type f -exec sed -i 's|main/main|main|g' {} + 2>/dev/null || true
+          sudo find /usr/lib/live/build/ -type f \
+            -exec sed -i 's|dists/\([^/]*\)/Contents-\([^/]*\).gz|dists/\1/main/Contents-\2.gz|g' {} + \
+            2>/dev/null || true
+          sudo find /usr/lib/live/build/ -type f \
+            -exec sed -i 's|main/main|main|g' {} + \
+            2>/dev/null || true
 
       - name: Sync Project Files
         run: |
           BUILD_DIR="/tmp/amitos-build"
           REPO="${GITHUB_WORKSPACE}"
 
-          # Create directory structure
           sudo mkdir -p "$BUILD_DIR/config/includes.chroot/etc/apt"
           sudo mkdir -p "$BUILD_DIR/config/includes.chroot/usr/local/amitos/apps"
           sudo mkdir -p "$BUILD_DIR/config/includes.chroot/usr/local/amitos/branding"
@@ -99,22 +103,17 @@ jobs:
           sudo mkdir -p "$BUILD_DIR/config/includes.chroot/etc/systemd/system"
           sudo mkdir -p "$BUILD_DIR/config/includes.chroot/usr/share/applications"
 
-          # Sync custom assets
           sudo cp -r "$REPO/branding/"* "$BUILD_DIR/config/includes.chroot/usr/local/amitos/branding/" 2>/dev/null || true
-          sudo cp -r "$REPO/apps/"* "$BUILD_DIR/config/includes.chroot/usr/local/amitos/apps/" 2>/dev/null || true
-          sudo cp -r "$REPO/core/"* "$BUILD_DIR/config/includes.chroot/usr/local/amitos/core/" 2>/dev/null || true
-          sudo cp -r "$REPO/themes/"* "$BUILD_DIR/config/includes.chroot/usr/share/themes/" 2>/dev/null || true
+          sudo cp -r "$REPO/apps/"*     "$BUILD_DIR/config/includes.chroot/usr/local/amitos/apps/"     2>/dev/null || true
+          sudo cp -r "$REPO/core/"*     "$BUILD_DIR/config/includes.chroot/usr/local/amitos/core/"     2>/dev/null || true
+          sudo cp -r "$REPO/themes/"*   "$BUILD_DIR/config/includes.chroot/usr/share/themes/"          2>/dev/null || true
+          sudo cp -r "$REPO/config/"*   "$BUILD_DIR/config/"                                           2>/dev/null || true
 
-          # Sync custom hooks and config
-          sudo cp -r "$REPO/config/"* "$BUILD_DIR/config/" 2>/dev/null || true
+          sudo cp "$REPO/amitshield/amitshield-ui.py" \
+            "$BUILD_DIR/config/includes.chroot/usr/local/amitos/apps/amitshield-ui.py" 2>/dev/null || true
+          sudo cp -r "$REPO/bridge/"* \
+            "$BUILD_DIR/config/includes.chroot/usr/local/amitos/core/" 2>/dev/null || true
 
-          # Copy AmitShield UI
-          sudo cp "$REPO/amitshield/amitshield-ui.py" "$BUILD_DIR/config/includes.chroot/usr/local/amitos/apps/amitshield-ui.py" 2>/dev/null || true
-
-          # Copy bridge module
-          sudo cp -r "$REPO/bridge/"* "$BUILD_DIR/config/includes.chroot/usr/local/amitos/core/" 2>/dev/null || true
-
-          # Ensure hooks are executable
           sudo chmod +x "$BUILD_DIR/config/hooks/normal/"*.hook.chroot 2>/dev/null || true
 
       - name: Create Package List
@@ -122,276 +121,263 @@ jobs:
           BUILD_DIR="/tmp/amitos-build"
           sudo mkdir -p "$BUILD_DIR/config/package-lists"
           sudo tee "$BUILD_DIR/config/package-lists/amitos.list.chroot" > /dev/null << 'PKGS'
-          # Desktop
-          kde-plasma-desktop
-          plasma-workspace
-          plasma-nm
-          kscreen
-          powerdevil
-          sddm
-          sddm-theme-breeze
-          breeze
-          breeze-gtk-theme
-          kwin-x11
-          xorg
-          xserver-xorg
+# Desktop Environment
+kde-plasma-desktop
+plasma-workspace
+plasma-nm
+kscreen
+powerdevil
+sddm
+sddm-theme-breeze
+breeze
+breeze-gtk-theme
+kwin-x11
+xorg
+xserver-xorg
 
-          # 15 Apps
-          chromium
-          qalculate-gtk
-          gnome-calendar
-          dolphin
-          konsole
-          kate
-          vlc
-          gwenview
-          rhythmbox
-          kde-spectacle
-          plasma-systemmonitor
-          ksystemstats
-          ark
-          okular
-          knotes
-          libreoffice-writer
-          libreoffice-calc
+# Core Apps (15)
+chromium
+qalculate-gtk
+gnome-calendar
+dolphin
+konsole
+kate
+vlc
+gwenview
+rhythmbox
+spectacle
+plasma-systemmonitor
+ksystemstats
+ark
+okular
+knotes
+libreoffice-writer
+libreoffice-calc
 
-          # Security (AmitShield deps)
-          ufw
-          gufw
-          apparmor
-          apparmor-profiles
-          apparmor-utils
-          clamav
-          clamtk
-          rkhunter
-          fail2ban
-          unattended-upgrades
+# Security - AmitShield dependencies
+ufw
+apparmor
+apparmor-profiles
+apparmor-utils
+clamav
+rkhunter
+fail2ban
+unattended-upgrades
 
-          # Fonts & UI
-          fonts-noto
-          fonts-noto-color-emoji
-          fonts-open-sans
-          fonts-hack
-          fonts-inter
+# Fonts and UI
+fonts-noto
+fonts-noto-color-emoji
+fonts-open-sans
+fonts-hack-ttf
 
-          # Networking
-          network-manager
-          network-manager-gnome
-          curl
-          wget
-          net-tools
-          network-manager-openvpn
-          network-manager-vpnc
-          network-manager-pptp
-          modemmanager
-          mobile-broadband-provider-info
+# Networking
+network-manager
+network-manager-gnome
+curl
+wget
+net-tools
+network-manager-openvpn
+network-manager-pptp
+modemmanager
+mobile-broadband-provider-info
 
-          # Multimedia codecs
-          gstreamer1.0-plugins-good
-          gstreamer1.0-plugins-bad
-          gstreamer1.0-plugins-ugly
-          gstreamer1.0-libav
-          ffmpeg
-          libavcodec-extra
+# Multimedia codecs
+gstreamer1.0-plugins-good
+gstreamer1.0-plugins-bad
+gstreamer1.0-plugins-ugly
+gstreamer1.0-libav
+ffmpeg
+libavcodec-extra
 
-          # Kernel & Core
-          linux-image-amd64
-          linux-headers-amd64
-          live-boot
-          live-config
-          live-config-systemd
+# Kernel and Live boot
+linux-image-amd64
+linux-headers-amd64
+live-boot
+live-config
+live-config-systemd
 
-          # Python GUI & Tray Runtimes
-          python3-gi
-          python3-gi-cairo
-          gir1.2-gtk-3.0
-          gir1.2-gtk-4.0
-          gir1.2-adw-1
-          gir1.2-ayatanaappindicator3-0.1
+# Python GUI runtimes
+python3-gi
+python3-gi-cairo
+gir1.2-gtk-3.0
+gir1.2-gtk-4.0
 
-          # Compiler (native C++ core)
-          g++
+# Compiler
+g++
 
-          # CPU Microcode
-          intel-microcode
-          amd64-microcode
+# CPU Microcode
+intel-microcode
+amd64-microcode
 
-          # GPU Drivers
-          xserver-xorg-video-intel
-          libgl1-mesa-dri
-          mesa-vulkan-drivers
-          xserver-xorg-video-amdgpu
-          xserver-xorg-video-nouveau
-          firmware-misc-nonfree
-          xserver-xorg-video-fbdev
-          xserver-xorg-video-vesa
+# GPU Drivers
+xserver-xorg-video-intel
+libgl1-mesa-dri
+mesa-vulkan-drivers
+xserver-xorg-video-amdgpu
+xserver-xorg-video-nouveau
+firmware-misc-nonfree
+xserver-xorg-video-fbdev
+xserver-xorg-video-vesa
 
-          # WiFi & Bluetooth Firmware
-          firmware-iwlwifi
-          firmware-realtek
-          firmware-atheros
-          wpasupplicant
-          wireless-tools
-          iw
-          rfkill
-          bluetooth
-          bluez
-          bluez-tools
-          bluedevil
-          blueman
+# WiFi and Bluetooth
+firmware-iwlwifi
+firmware-realtek
+firmware-atheros
+wpasupplicant
+wireless-tools
+iw
+rfkill
+bluetooth
+bluez
+bluez-tools
+bluedevil
+blueman
 
-          # Audio & Multimedia (Modern PipeWire configuration)
-          alsa-utils
-          pavucontrol
-          plasma-pa
-          pipewire
-          pipewire-pulse
-          pipewire-alsa
-          wireplumber
+# Audio (PipeWire)
+alsa-utils
+pavucontrol
+plasma-pa
+pipewire
+pipewire-pulse
+pipewire-alsa
+wireplumber
 
-          # Touchpad & Input
-          xserver-xorg-input-libinput
-          xserver-xorg-input-synaptics
-          libinput-tools
+# Input devices
+xserver-xorg-input-libinput
+xserver-xorg-input-synaptics
+libinput-bin
 
-          # USB & File Systems
-          ntfs-3g
-          exfatprogs
-          dosfstools
-          btrfs-progs
-          udisks2
-          gvfs
-          gvfs-backends
+# File systems and USB
+ntfs-3g
+exfatprogs
+dosfstools
+btrfs-progs
+udisks2
+gvfs
+gvfs-backends
 
-          # Webcam
-          v4l-utils
+# Webcam
+v4l-utils
 
-          # Printers & Scanners
-          cups
-          cups-filters
-          system-config-printer
-          hplip
-          sane-utils
-          simple-scan
+# Printers and Scanners
+cups
+cups-filters
+hplip
+sane-utils
+simple-scan
 
-          # Power Management (TLP prioritized for optimization)
-          acpi
-          acpid
-          tlp
-          thermald
-          cpufrequtils
+# Power Management
+acpi
+acpid
+tlp
+thermald
+cpufrequtils
 
-          # Utilities
-          gparted
-          timeshift
-          python3
-          python3-dbus
-          p7zip-full
-          zip
-          unzip
-          htop
-          nano
-          bash-completion
-          pciutils
-          usbutils
-          dctrl-tools
-          resolvconf
-          zenity
+# Utilities
+gparted
+python3
+python3-dbus
+p7zip-full
+zip
+unzip
+htop
+nano
+bash-completion
+pciutils
+usbutils
+dctrl-tools
+zenity
 
-          # Installer
-          calamares
+# Installer
+calamares
 
-          # Bootloader dependencies inside chroot
-          isolinux
-          syslinux
-          syslinux-common
+# Bootloader inside chroot
+isolinux
+syslinux
+syslinux-common
 
-          # Plymouth boot splash
-          plymouth
-          plymouth-themes
-          libplymouth5
-          PKGS
-
-          # Clean leading whitespace from heredoc indentation
-          sudo sed -i 's/^          //' "$BUILD_DIR/config/package-lists/amitos.list.chroot"
+# Plymouth boot splash
+plymouth
+plymouth-themes
+libplymouth5
+PKGS
 
       - name: Create AmitShield Daemon
         run: |
           BUILD_DIR="/tmp/amitos-build"
           sudo tee "$BUILD_DIR/config/includes.chroot/usr/local/bin/amitshield" > /dev/null << 'SHIELD'
-          #!/usr/bin/env python3
-          """AmitShield Security Engine — Amit OS"""
-          import os, sys, time, re, subprocess, threading, json, logging
-          from datetime import datetime
+#!/usr/bin/env python3
+"""AmitShield Security Engine - Amit OS"""
+import os, sys, time, re, subprocess, threading, json, logging
+from datetime import datetime
 
-          logging.basicConfig(filename='/var/log/amitshield.log',
-              format='%(asctime)s [%(levelname)s] %(message)s', level=logging.INFO)
-          log = logging.getLogger('amitshield')
+logging.basicConfig(filename='/var/log/amitshield.log',
+    format='%(asctime)s [%(levelname)s] %(message)s', level=logging.INFO)
+log = logging.getLogger('amitshield')
 
-          SUSPICIOUS = [r'xmrig',r'minerd',r'cpuminer',r'nc -e',r'/dev/tcp/',
-                        r'wget.*\|.*bash',r'curl.*\|.*bash']
-          DANGEROUS_PORTS = {23,135,137,139,445,3389,5900,4444,1337}
-          PROTECTED = {'systemd','sddm','plasmashell','kwin_x11','dbus-daemon',
-                       'NetworkManager','amitshield'}
+SUSPICIOUS = [r'xmrig',r'minerd',r'cpuminer',r'nc -e',r'/dev/tcp/',
+              r'wget.*\|.*bash',r'curl.*\|.*bash']
+DANGEROUS_PORTS = {23,135,137,139,445,3389,5900,4444,1337}
+PROTECTED = {'systemd','sddm','plasmashell','kwin_x11','dbus-daemon',
+             'NetworkManager','amitshield'}
 
-          def setup_firewall():
-              cmds = [['ufw','default','deny','incoming'],
-                      ['ufw','default','allow','outgoing'],
-                      ['ufw','allow','ssh'],['ufw','allow','80/tcp'],
-                      ['ufw','allow','443/tcp'],['ufw','--force','enable']]
-              for c in cmds:
-                  subprocess.run(c, capture_output=True)
-              for p in DANGEROUS_PORTS:
-                  subprocess.run(['ufw','deny',str(p)], capture_output=True)
-              log.info('Firewall active')
+def setup_firewall():
+    cmds = [['ufw','default','deny','incoming'],
+            ['ufw','default','allow','outgoing'],
+            ['ufw','allow','ssh'],['ufw','allow','80/tcp'],
+            ['ufw','allow','443/tcp'],['ufw','--force','enable']]
+    for c in cmds:
+        subprocess.run(c, capture_output=True)
+    for p in DANGEROUS_PORTS:
+        subprocess.run(['ufw','deny',str(p)], capture_output=True)
+    log.info('Firewall active')
 
-          def scan_processes():
-              import glob
-              for pid_path in glob.glob('/proc/[0-9]*/cmdline'):
-                  try:
-                      pid = int(pid_path.split('/')[2])
-                      with open(pid_path,'rb') as f:
-                          cmd = f.read().replace(b'\x00',b' ').decode(errors='replace')
-                      name_path = f'/proc/{pid}/comm'
-                      name = open(name_path).read().strip() if os.path.exists(name_path) else ''
-                      if name in PROTECTED: continue
-                      for pat in SUSPICIOUS:
-                          if re.search(pat, cmd, re.IGNORECASE):
-                              log.warning(f'THREAT PID:{pid} NAME:{name} — suspended')
-                              os.kill(pid, 19)
-                              subprocess.Popen(['notify-send','--urgency=critical',
-                                  'AmitShield Alert',f'Threat blocked: {name} [PID:{pid}]'])
-                              break
-                  except Exception: pass
+def scan_processes():
+    import glob
+    for pid_path in glob.glob('/proc/[0-9]*/cmdline'):
+        try:
+            pid = int(pid_path.split('/')[2])
+            with open(pid_path,'rb') as f:
+                cmd = f.read().replace(b'\x00',b' ').decode(errors='replace')
+            name_path = f'/proc/{pid}/comm'
+            name = open(name_path).read().strip() if os.path.exists(name_path) else ''
+            if name in PROTECTED: continue
+            for pat in SUSPICIOUS:
+                if re.search(pat, cmd, re.IGNORECASE):
+                    log.warning(f'THREAT PID:{pid} NAME:{name} - suspended')
+                    os.kill(pid, 19)
+                    subprocess.Popen(['notify-send','--urgency=critical',
+                        'AmitShield Alert',f'Threat blocked: {name} [PID:{pid}]'])
+                    break
+        except Exception: pass
 
-          def main():
-              log.info('=== AmitShield v1.0 starting ===')
-              setup_firewall()
-              scan = 0
-              while True:
-                  scan += 1
-                  scan_processes()
-                  log.info(f'Scan #{scan} complete')
-                  time.sleep(30)
+def main():
+    log.info('=== AmitShield v1.0 starting ===')
+    setup_firewall()
+    scan = 0
+    while True:
+        scan += 1
+        scan_processes()
+        log.info(f'Scan #{scan} complete')
+        time.sleep(30)
 
-          if __name__ == '__main__':
-              main()
-          SHIELD
+if __name__ == '__main__':
+    main()
+SHIELD
           sudo chmod +x "$BUILD_DIR/config/includes.chroot/usr/local/bin/amitshield"
 
-          # AmitShield systemd service
           sudo tee "$BUILD_DIR/config/includes.chroot/etc/systemd/system/amitshield.service" > /dev/null << 'SVC'
-          [Unit]
-          Description=AmitShield Security Engine
-          After=network.target
-          [Service]
-          Type=simple
-          ExecStart=/usr/local/bin/amitshield
-          Restart=on-failure
-          RestartSec=5s
-          [Install]
-          WantedBy=multi-user.target
-          SVC
+[Unit]
+Description=AmitShield Security Engine
+After=network.target
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/amitshield
+Restart=on-failure
+RestartSec=5s
+[Install]
+WantedBy=multi-user.target
+SVC
 
       - name: Create Desktop Shortcuts
         run: |
@@ -399,63 +385,76 @@ jobs:
           APPS="$BUILD_DIR/config/includes.chroot/usr/share/applications"
           sudo mkdir -p "$APPS"
 
-          sudo tee "$APPS/amitbrowser.desktop" > /dev/null << 'E'
-          [Desktop Entry]
-          Name=AmitBrowser
-          Exec=chromium --no-sandbox %U
-          Icon=chromium
-          Type=Application
-          Categories=Network;WebBrowser;
-          E
+          sudo tee "$APPS/amitbrowser.desktop" > /dev/null << 'EOF'
+[Desktop Entry]
+Name=AmitBrowser
+Exec=chromium --no-sandbox %U
+Icon=chromium
+Type=Application
+Categories=Network;WebBrowser;
+EOF
 
-          sudo tee "$APPS/amitcalc.desktop" > /dev/null << 'E'
-          [Desktop Entry]
-          Name=AmitCalc
-          Exec=qalculate-gtk
-          Icon=accessories-calculator
-          Type=Application
-          Categories=Utility;Calculator;
-          E
+          sudo tee "$APPS/amitcalc.desktop" > /dev/null << 'EOF'
+[Desktop Entry]
+Name=AmitCalc
+Exec=qalculate-gtk
+Icon=accessories-calculator
+Type=Application
+Categories=Utility;Calculator;
+EOF
 
-          sudo tee "$APPS/amitfiles.desktop" > /dev/null << 'E'
-          [Desktop Entry]
-          Name=AmitFiles
-          Exec=dolphin
-          Icon=system-file-manager
-          Type=Application
-          Categories=System;FileManager;
-          E
+          sudo tee "$APPS/amitfiles.desktop" > /dev/null << 'EOF'
+[Desktop Entry]
+Name=AmitFiles
+Exec=dolphin
+Icon=system-file-manager
+Type=Application
+Categories=System;FileManager;
+EOF
 
-          sudo tee "$APPS/amitshield-ui.desktop" > /dev/null << 'E'
-          [Desktop Entry]
-          Name=AmitShield
-          Exec=bash -c "pkexec env DISPLAY=$DISPLAY XAUTHORITY=$XAUTHORITY systemctl status amitshield | zenity --text-info --title='AmitShield Security'"
-          Icon=security-high
-          Type=Application
-          Categories=System;Security;
-          E
+          sudo tee "$APPS/amitshield-ui.desktop" > /dev/null << 'EOF'
+[Desktop Entry]
+Name=AmitShield
+Exec=bash -c "systemctl status amitshield | zenity --text-info --title=AmitShield"
+Icon=security-high
+Type=Application
+Categories=System;Security;
+EOF
 
-      - name: Create DNS Fix Hook
+      - name: Create Chroot Hooks
         run: |
           BUILD_DIR="/tmp/amitos-build"
+
+          # DNS fix hook
           sudo tee "$BUILD_DIR/config/hooks/normal/0000-dns-fix.hook.chroot" > /dev/null << 'EOF'
-          #!/bin/bash
-          echo "nameserver 8.8.8.8" > /etc/resolv.conf
-          EOF
+#!/bin/bash
+echo "nameserver 8.8.8.8" > /etc/resolv.conf
+EOF
           sudo chmod +x "$BUILD_DIR/config/hooks/normal/0000-dns-fix.hook.chroot"
 
-      - name: Create Super-Fix Hook
-        run: |
-          BUILD_DIR="/tmp/amitos-build"
+          # Plymouth activation hook
+          sudo tee "$BUILD_DIR/config/hooks/normal/0050-plymouth.hook.chroot" > /dev/null << 'EOF'
+#!/bin/bash
+set -e
+if command -v plymouth-set-default-theme >/dev/null 2>&1; then
+    plymouth-set-default-theme amitos 2>/dev/null || \
+    plymouth-set-default-theme -R amitos 2>/dev/null || true
+fi
+if [ -f /usr/sbin/update-initramfs ]; then
+    update-initramfs -u 2>/dev/null || true
+fi
+EOF
+          sudo chmod +x "$BUILD_DIR/config/hooks/normal/0050-plymouth.hook.chroot"
+
+          # Super-fix hook
           sudo tee "$BUILD_DIR/config/hooks/normal/9999-super-fix.hook.chroot" > /dev/null << 'EOF'
-          #!/bin/bash
-          export DEBIAN_FRONTEND=noninteractive
-          echo "Running Super-Fix to repair any broken package states..."
-          dpkg --configure -a || true
-          apt-get install -f -y || true
-          [ -e /dev/null ] && rm -f /dev/null
-          mknod -m 666 /dev/null c 1 3
-          EOF
+#!/bin/bash
+export DEBIAN_FRONTEND=noninteractive
+dpkg --configure -a || true
+apt-get install -f -y || true
+[ -e /dev/null ] && rm -f /dev/null
+mknod -m 666 /dev/null c 1 3
+EOF
           sudo chmod +x "$BUILD_DIR/config/hooks/normal/9999-super-fix.hook.chroot"
 
       - name: Create Sources List
@@ -463,10 +462,9 @@ jobs:
           BUILD_DIR="/tmp/amitos-build"
           sudo mkdir -p "$BUILD_DIR/config/includes.chroot/etc/apt"
           sudo tee "$BUILD_DIR/config/includes.chroot/etc/apt/sources.list" > /dev/null << 'EOF'
-          deb http://deb.debian.org/debian bookworm main contrib non-free non-free-firmware
-          deb http://security.debian.org/debian-security bookworm-security main contrib non-free non-free-firmware
-          deb http://deb.debian.org/debian bookworm-updates main contrib non-free non-free-firmware
-          EOF
+deb http://deb.debian.org/debian bookworm main contrib non-free non-free-firmware
+deb http://deb.debian.org/debian bookworm-updates main contrib non-free non-free-firmware
+EOF
 
       - name: Copy Boot Files
         run: |
@@ -474,8 +472,8 @@ jobs:
           sudo mkdir -p "$BUILD_DIR/config/bootloaders/isolinux"
           sudo mkdir -p "$BUILD_DIR/config/includes.binary/isolinux"
           sudo mkdir -p "$BUILD_DIR/config/binary_local-includes/isolinux"
-          # Pre-create binary/isolinux so lb_binary_syslinux finds it
           sudo mkdir -p "$BUILD_DIR/binary/isolinux"
+
           for f in /usr/lib/ISOLINUX/isolinux.bin \
                    /usr/lib/syslinux/modules/bios/vesamenu.c32 \
                    /usr/lib/syslinux/modules/bios/ldlinux.c32 \
@@ -483,155 +481,156 @@ jobs:
                    /usr/lib/syslinux/modules/bios/libutil.c32 \
                    /usr/lib/syslinux/modules/bios/menu.c32 \
                    /usr/lib/syslinux/modules/bios/chain.c32; do
-              if [ -f "$f" ]; then
-                  sudo cp "$f" "$BUILD_DIR/config/bootloaders/isolinux/"
-                  sudo cp "$f" "$BUILD_DIR/config/includes.binary/isolinux/"
-                  sudo cp "$f" "$BUILD_DIR/config/binary_local-includes/isolinux/"
-                  echo "  [OK] Copied $(basename "$f")"
-              else
-                  echo "  [SKIP] $f not found"
-              fi
+            if [ -f "$f" ]; then
+              sudo cp "$f" "$BUILD_DIR/config/bootloaders/isolinux/"
+              sudo cp "$f" "$BUILD_DIR/config/includes.binary/isolinux/"
+              sudo cp "$f" "$BUILD_DIR/config/binary_local-includes/isolinux/"
+              echo "  [OK] Copied $(basename $f)"
+            else
+              echo "  [SKIP] $f not found"
+            fi
           done
 
-      - name: Install Pillow & Prepare Branding Images
-        run: |
-          pip3 install Pillow --quiet
-
-      - name: Generate Bootlogo & Splash (from repo branding assets)
+      - name: Generate Bootlogo and Plymouth Splash
         run: |
           BUILD_DIR="/tmp/amitos-build"
           REPO="${GITHUB_WORKSPACE}"
 
-          # Install locations
           sudo mkdir -p "$BUILD_DIR/binary/isolinux"
           sudo mkdir -p "$BUILD_DIR/config/bootloaders/isolinux"
           sudo mkdir -p "$BUILD_DIR/config/includes.binary/isolinux"
-          # Plymouth splash destination inside chroot
           sudo mkdir -p "$BUILD_DIR/config/includes.chroot/usr/share/plymouth/themes/amitos"
           sudo mkdir -p "$BUILD_DIR/config/includes.chroot/usr/share/pixmaps"
 
-          python3 - <<'PYEOF'
-          from PIL import Image
-          import os, shutil
+          python3 << 'PYEOF'
+import os, shutil, sys
+try:
+    from PIL import Image
+    HAS_PIL = True
+except ImportError:
+    HAS_PIL = False
+    import struct, zlib
 
-          REPO = os.environ['GITHUB_WORKSPACE']
-          BUILD = '/tmp/amitos-build'
+REPO  = os.environ['GITHUB_WORKSPACE']
+BUILD = '/tmp/amitos-build'
 
-          def save_png(img, path):
-              os.makedirs(os.path.dirname(path), exist_ok=True)
-              img.save(path, 'PNG', optimize=True)
-              print(f'  [OK] {path}  ({os.path.getsize(path)//1024} KB)')
+def write_fallback_png(path, w=640, h=480):
+    """Write minimal dark-navy PNG without Pillow."""
+    import struct, zlib
+    row = bytes([0]) + bytes([10, 14, 38] * w)
+    raw = row * h
+    comp = zlib.compress(raw, 1)
+    def ck(n, d):
+        c = n + d
+        return struct.pack('>I', len(d)) + c + struct.pack('>I', zlib.crc32(c) & 0xffffffff)
+    png = b'\x89PNG\r\n\x1a\n'
+    png += ck(b'IHDR', struct.pack('>IIBBBBB', w, h, 8, 2, 0, 0, 0))
+    png += ck(b'IDAT', comp)
+    png += ck(b'IEND', b'')
+    os.makedirs(os.path.dirname(path) or '.', exist_ok=True)
+    with open(path, 'wb') as f:
+        f.write(png)
+    print(f'  [OK] fallback PNG -> {path}')
 
-          # --- Bootlogo: 640x480 for syslinux isolinux boot menu ---
-          src_boot = os.path.join(REPO, 'branding', 'bootlogo.png')
-          boot_img = Image.open(src_boot).convert('RGB').resize((640, 480), Image.LANCZOS)
+def save_png(img_or_path, dest, w, h):
+    os.makedirs(os.path.dirname(dest) or '.', exist_ok=True)
+    if HAS_PIL:
+        if isinstance(img_or_path, str):
+            img = Image.open(img_or_path).convert('RGB').resize((w, h), Image.LANCZOS)
+        else:
+            img = img_or_path.resize((w, h), Image.LANCZOS)
+        img.save(dest, 'PNG', optimize=True)
+    else:
+        write_fallback_png(dest, w, h)
+    kb = os.path.getsize(dest) // 1024
+    print(f'  [OK] {dest}  ({kb} KB)')
 
-          BOOTLOGO_PATHS = [
-              f'{BUILD}/binary/isolinux/bootlogo',
-              f'{BUILD}/config/bootloaders/isolinux/bootlogo',
-              f'{BUILD}/config/includes.binary/isolinux/bootlogo',
-          ]
-          for p in BOOTLOGO_PATHS:
-              save_png(boot_img, p)
+boot_src   = os.path.join(REPO, 'branding', 'bootlogo.png')
+splash_src = os.path.join(REPO, 'branding', 'splash.png')
 
-          # Also save as .png alias for any script that looks for it
-          for p in BOOTLOGO_PATHS:
-              shutil.copy(p, p.replace('bootlogo', 'splash.png')) if 'bootlogo' in p else None
+# -- syslinux bootlogo (640x480) -----------------------------------------
+bootlogo_dests = [
+    f'{BUILD}/binary/isolinux/bootlogo',
+    f'{BUILD}/config/bootloaders/isolinux/bootlogo',
+    f'{BUILD}/config/includes.binary/isolinux/bootlogo',
+]
+for d in bootlogo_dests:
+    save_png(boot_src, d, 640, 480)
 
-          # --- Splash: 1920x1080 for plymouth boot splash ---
-          src_splash = os.path.join(REPO, 'branding', 'splash.png')
-          splash_img = Image.open(src_splash).convert('RGB').resize((1920, 1080), Image.LANCZOS)
+# -- Plymouth splash (1920x1080) ------------------------------------------
+splash_dests = [
+    f'{BUILD}/config/includes.chroot/usr/share/plymouth/themes/amitos/splash.png',
+    f'{BUILD}/config/includes.chroot/usr/share/pixmaps/amitos-splash.png',
+]
+for d in splash_dests:
+    save_png(splash_src, d, 1920, 1080)
 
-          SPLASH_PATHS = [
-              f'{BUILD}/config/includes.chroot/usr/share/plymouth/themes/amitos/splash.png',
-              f'{BUILD}/config/includes.chroot/usr/share/pixmaps/amitos-splash.png',
-          ]
-          for p in SPLASH_PATHS:
-              save_png(splash_img, p)
+# -- Copy originals into branding dir inside chroot -----------------------
+branding_dir = f'{BUILD}/config/includes.chroot/usr/local/amitos/branding'
+os.makedirs(branding_dir, exist_ok=True)
+shutil.copy(boot_src,   os.path.join(branding_dir, 'bootlogo.png'))
+shutil.copy(splash_src, os.path.join(branding_dir, 'splash.png'))
 
-          # --- Also copy originals at native res into branding dir ---
-          os.makedirs(f'{BUILD}/config/includes.chroot/usr/local/amitos/branding', exist_ok=True)
-          shutil.copy(src_boot,   f'{BUILD}/config/includes.chroot/usr/local/amitos/branding/bootlogo.png')
-          shutil.copy(src_splash, f'{BUILD}/config/includes.chroot/usr/local/amitos/branding/splash.png')
+print('[OK] All branding images ready.')
+PYEOF
 
-          print('[OK] All branding images processed.')
-          PYEOF
-
-          # Create Plymouth amitos theme descriptor
+          # Plymouth theme descriptor
           sudo tee "$BUILD_DIR/config/includes.chroot/usr/share/plymouth/themes/amitos/amitos.plymouth" > /dev/null << 'PLYM'
-          [Plymouth Theme]
-          Name=AmitOS
-          Description=AmitOS Boot Splash
-          ModuleName=script
+[Plymouth Theme]
+Name=AmitOS
+Description=AmitOS Boot Splash
+ModuleName=script
 
-          [script]
-          ImageDir=/usr/share/plymouth/themes/amitos
-          ScriptFile=/usr/share/plymouth/themes/amitos/amitos.script
-          PLYM
+[script]
+ImageDir=/usr/share/plymouth/themes/amitos
+ScriptFile=/usr/share/plymouth/themes/amitos/amitos.script
+PLYM
 
-          # Create minimal Plymouth script — loading bar drawn natively on top of clean splash
+          # Plymouth script: clean static image + native progress bar drawn on top
           sudo tee "$BUILD_DIR/config/includes.chroot/usr/share/plymouth/themes/amitos/amitos.script" > /dev/null << 'PLYMSCRIPT'
-          /* AmitOS Plymouth Theme — static splash + native progress bar */
+/* AmitOS Plymouth Theme */
+/* Static branded splash + native glowing progress bar */
 
-          /* ── Background (static clean image, no bar baked in) ── */
-          wallpaper_image = Image("splash.png");
-          screen_width    = Plymouth.GetWidth();
-          screen_height   = Plymouth.GetHeight();
-          scaled          = wallpaper_image.Scale(screen_width, screen_height);
-          bg_sprite       = Sprite(scaled);
-          bg_sprite.SetZ(-100);
+wallpaper_image = Image("splash.png");
+screen_w = Plymouth.GetWidth();
+screen_h = Plymouth.GetHeight();
+scaled   = wallpaper_image.Scale(screen_w, screen_h);
+bg       = Sprite(scaled);
+bg.SetZ(-100);
 
-          /* ── Progress bar dimensions ── */
-          bar_height  = 4;
-          bar_y       = screen_height - 48;
-          bar_max_w   = Math.Int(screen_width * 0.60);
-          bar_x       = Math.Int((screen_width - bar_max_w) / 2);
+bar_h   = 4;
+bar_y   = screen_h - 48;
+bar_maxw = Math.Int(screen_w * 0.60);
+bar_x   = Math.Int((screen_w - bar_maxw) / 2);
 
-          /* ── Bar background track (dark translucent) ── */
-          track_img = Image.CreateAt(bar_max_w, bar_height);
-          track_img.Rectangle(0, 0, bar_max_w, bar_height, 0.10, 0.10, 0.15, 0.55);
-          track_spr = Sprite(track_img);
-          track_spr.SetPosition(bar_x, bar_y, 1);
+track_img = Image.CreateAt(bar_maxw, bar_h);
+track_img.Rectangle(0, 0, bar_maxw, bar_h, 0.10, 0.10, 0.15, 0.55);
+track = Sprite(track_img);
+track.SetPosition(bar_x, bar_y, 1);
 
-          /* ── Glowing cyan fill bar ── */
-          fill_img = Image.CreateAt(bar_max_w, bar_height);
-          fill_spr = Sprite(fill_img);
-          fill_spr.SetPosition(bar_x, bar_y, 2);
+fill_img = Image.CreateAt(1, bar_h);
+fill     = Sprite(fill_img);
+fill.SetPosition(bar_x, bar_y, 2);
 
-          global.progress = 0;
+fun progress_callback(dur, pct) {
+    fw = Math.Int(bar_maxw * pct);
+    if (fw < 2) fw = 2;
+    nf = Image.CreateAt(fw, bar_h);
+    nf.Rectangle(0, 0, fw, bar_h, 0.0, 0.78, 1.0, 1.0);
+    nf.Rectangle(0, 0, fw, 1,     0.4, 0.95, 1.0, 0.7);
+    fill.SetImage(nf);
+}
+Plymouth.SetBootProgressFunction(progress_callback);
 
-          fun refresh_callback() {
-          }
-          Plymouth.SetRefreshFunction(refresh_callback);
+fun quit_callback() {
+    bg.SetOpacity(0);
+    track.SetOpacity(0);
+    fill.SetOpacity(0);
+}
+Plymouth.SetQuitFunction(quit_callback);
+PLYMSCRIPT
 
-          fun progress_callback(duration, progress) {
-              global.progress = progress;
-              fill_w = Math.Int(bar_max_w * progress);
-              if (fill_w < 2) fill_w = 2;
-              new_fill = Image.CreateAt(fill_w, bar_height);
-              /* Cyan glow: R=0 G=0.78 B=1.0 */
-              new_fill.Rectangle(0, 0, fill_w, bar_height, 0.0, 0.78, 1.0, 1.0);
-              /* Soft inner highlight */
-              new_fill.Rectangle(0, 0, fill_w, 1,           0.4, 0.95, 1.0, 0.7);
-              fill_spr.SetImage(new_fill);
-          }
-          Plymouth.SetBootProgressFunction(progress_callback);
-
-          fun quit_callback() {
-              bg_sprite.SetOpacity(0);
-              track_spr.SetOpacity(0);
-              fill_spr.SetOpacity(0);
-          }
-          Plymouth.SetQuitFunction(quit_callback);
-          PLYMSCRIPT
-
-          echo "[OK] Bootlogo (640x480) and Splash (1920x1080) placed in build tree."
-          echo "[OK] Plymouth amitos theme created."
-
-          # Patch lb_binary_syslinux: make bootlogo missing non-fatal (belt & suspenders)
-          sudo sed -i \
-            's|exec [0-9]\+> binary/isolinux/bootlogo|true \&\& exec 9>/dev/null \# bootlogo provided|g' \
-            /usr/lib/live/build/lb_binary_syslinux 2>/dev/null || true
+          echo "[OK] Bootlogo and Plymouth theme created."
 
       - name: Build ISO
         run: |
@@ -639,41 +638,37 @@ jobs:
           BUILD_DIR="/tmp/amitos-build"
           cd "$BUILD_DIR"
 
-          # Strip leading whitespace from all hooks (heredoc indentation artifact)
+          # Remove leading whitespace artifact from heredoc-indented hooks
           for f in config/hooks/normal/*.hook.chroot; do
-            sudo sed -i 's/^          //' "$f" 2>/dev/null || true
+            sudo sed -i 's/^[[:space:]]\{10\}//' "$f" 2>/dev/null || true
           done
 
-          # Ensure binary/isolinux/bootlogo exists right before lb build
-          # (lb_binary_syslinux line 365 requires this file to exist)
+          # Ensure bootlogo is in place (lb_binary_syslinux line 365 needs it)
           sudo mkdir -p binary/isolinux
           if [ ! -f binary/isolinux/bootlogo ]; then
-            sudo python3 -c "
-import struct, zlib
-def write_png(path, w=640, h=480):
-    row = bytes([0]) + bytes([10,15,40]*w)
-    raw = row * h
-    comp = zlib.compress(raw, 1)
-    def ck(n,d): c=n+d; return struct.pack('>I',len(d))+c+struct.pack('>I',zlib.crc32(c)&0xffffffff)
-    png = b'\\x89PNG\\r\\n\\x1a\\n'
-    png += ck(b'IHDR', struct.pack('>IIBBBBB',w,h,8,2,0,0,0))
-    png += ck(b'IDAT', comp)
-    png += ck(b'IEND', b'')
-    open(path,'wb').write(png)
-write_png('binary/isolinux/bootlogo')
-print('[OK] bootlogo created')
-"
+            echo "[WARN] bootlogo missing, copying from config/bootloaders"
+            sudo cp config/bootloaders/isolinux/bootlogo binary/isolinux/bootlogo 2>/dev/null || \
+            sudo cp config/includes.binary/isolinux/bootlogo binary/isolinux/bootlogo 2>/dev/null || \
+            echo "[WARN] no bootlogo found - build may fail"
+          else
+            echo "[OK] bootlogo present: $(wc -c < binary/isolinux/bootlogo) bytes"
           fi
 
           echo "=== Starting lb build ==="
           sudo lb build 2>&1 | tee /tmp/lb-build.log
           BUILD_EXIT=${PIPESTATUS[0]}
+
           if [ $BUILD_EXIT -ne 0 ]; then
-            echo "=== lb build FAILED (exit $BUILD_EXIT) ==="
-            echo "=== Last 100 lines of build log ==="
-            tail -100 /tmp/lb-build.log || true
+            echo ""
+            echo "=== BUILD FAILED (exit $BUILD_EXIT) ==="
+            echo "=== Last 150 lines ==="
+            tail -150 /tmp/lb-build.log || true
             exit $BUILD_EXIT
           fi
+
+          echo ""
+          echo "=== BUILD SUCCESS ==="
+          ls -lh *.iso 2>/dev/null || echo "WARNING: No ISO found!"
 
       - name: Upload ISO Artifact
         uses: actions/upload-artifact@v4
@@ -692,11 +687,12 @@ print('[OK] bootlogo created')
           name: "Amit OS 1.0 Build #${{ github.run_number }}"
           body: |
             ## Amit OS 1.0 - Automated Build
-            
-            🔒 **Security**: AmitShield Engine with real-time threat detection
-            🎨 **Desktop**: KDE Plasma with Breeze Dark theme
-            📱 **Apps**: 15+ custom apps included
-            
+
+            **Security**: AmitShield Engine with real-time threat detection
+            **Desktop**: KDE Plasma with Breeze Dark theme
+            **Apps**: 15+ custom apps included
+            **Boot**: Custom AmitOS plymouth splash with native progress bar
+
             Built from commit: ${{ github.sha }}
           files: /tmp/amitos-build/*.iso
         env:
