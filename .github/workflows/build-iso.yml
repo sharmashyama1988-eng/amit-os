@@ -305,6 +305,11 @@ jobs:
           isolinux
           syslinux
           syslinux-common
+
+          # Plymouth boot splash
+          plymouth
+          plymouth-themes
+          libplymouth5
           PKGS
 
           # Clean leading whitespace from heredoc indentation
@@ -469,6 +474,8 @@ jobs:
           sudo mkdir -p "$BUILD_DIR/config/bootloaders/isolinux"
           sudo mkdir -p "$BUILD_DIR/config/includes.binary/isolinux"
           sudo mkdir -p "$BUILD_DIR/config/binary_local-includes/isolinux"
+          # Pre-create binary/isolinux so lb_binary_syslinux finds it
+          sudo mkdir -p "$BUILD_DIR/binary/isolinux"
           for f in /usr/lib/ISOLINUX/isolinux.bin \
                    /usr/lib/syslinux/modules/bios/vesamenu.c32 \
                    /usr/lib/syslinux/modules/bios/ldlinux.c32 \
@@ -486,6 +493,146 @@ jobs:
               fi
           done
 
+      - name: Install Pillow & Prepare Branding Images
+        run: |
+          pip3 install Pillow --quiet
+
+      - name: Generate Bootlogo & Splash (from repo branding assets)
+        run: |
+          BUILD_DIR="/tmp/amitos-build"
+          REPO="${GITHUB_WORKSPACE}"
+
+          # Install locations
+          sudo mkdir -p "$BUILD_DIR/binary/isolinux"
+          sudo mkdir -p "$BUILD_DIR/config/bootloaders/isolinux"
+          sudo mkdir -p "$BUILD_DIR/config/includes.binary/isolinux"
+          # Plymouth splash destination inside chroot
+          sudo mkdir -p "$BUILD_DIR/config/includes.chroot/usr/share/plymouth/themes/amitos"
+          sudo mkdir -p "$BUILD_DIR/config/includes.chroot/usr/share/pixmaps"
+
+          python3 - <<'PYEOF'
+          from PIL import Image
+          import os, shutil
+
+          REPO = os.environ['GITHUB_WORKSPACE']
+          BUILD = '/tmp/amitos-build'
+
+          def save_png(img, path):
+              os.makedirs(os.path.dirname(path), exist_ok=True)
+              img.save(path, 'PNG', optimize=True)
+              print(f'  [OK] {path}  ({os.path.getsize(path)//1024} KB)')
+
+          # --- Bootlogo: 640x480 for syslinux isolinux boot menu ---
+          src_boot = os.path.join(REPO, 'branding', 'bootlogo.png')
+          boot_img = Image.open(src_boot).convert('RGB').resize((640, 480), Image.LANCZOS)
+
+          BOOTLOGO_PATHS = [
+              f'{BUILD}/binary/isolinux/bootlogo',
+              f'{BUILD}/config/bootloaders/isolinux/bootlogo',
+              f'{BUILD}/config/includes.binary/isolinux/bootlogo',
+          ]
+          for p in BOOTLOGO_PATHS:
+              save_png(boot_img, p)
+
+          # Also save as .png alias for any script that looks for it
+          for p in BOOTLOGO_PATHS:
+              shutil.copy(p, p.replace('bootlogo', 'splash.png')) if 'bootlogo' in p else None
+
+          # --- Splash: 1920x1080 for plymouth boot splash ---
+          src_splash = os.path.join(REPO, 'branding', 'splash.png')
+          splash_img = Image.open(src_splash).convert('RGB').resize((1920, 1080), Image.LANCZOS)
+
+          SPLASH_PATHS = [
+              f'{BUILD}/config/includes.chroot/usr/share/plymouth/themes/amitos/splash.png',
+              f'{BUILD}/config/includes.chroot/usr/share/pixmaps/amitos-splash.png',
+          ]
+          for p in SPLASH_PATHS:
+              save_png(splash_img, p)
+
+          # --- Also copy originals at native res into branding dir ---
+          os.makedirs(f'{BUILD}/config/includes.chroot/usr/local/amitos/branding', exist_ok=True)
+          shutil.copy(src_boot,   f'{BUILD}/config/includes.chroot/usr/local/amitos/branding/bootlogo.png')
+          shutil.copy(src_splash, f'{BUILD}/config/includes.chroot/usr/local/amitos/branding/splash.png')
+
+          print('[OK] All branding images processed.')
+          PYEOF
+
+          # Create Plymouth amitos theme descriptor
+          sudo tee "$BUILD_DIR/config/includes.chroot/usr/share/plymouth/themes/amitos/amitos.plymouth" > /dev/null << 'PLYM'
+          [Plymouth Theme]
+          Name=AmitOS
+          Description=AmitOS Boot Splash
+          ModuleName=script
+
+          [script]
+          ImageDir=/usr/share/plymouth/themes/amitos
+          ScriptFile=/usr/share/plymouth/themes/amitos/amitos.script
+          PLYM
+
+          # Create minimal Plymouth script — loading bar drawn natively on top of clean splash
+          sudo tee "$BUILD_DIR/config/includes.chroot/usr/share/plymouth/themes/amitos/amitos.script" > /dev/null << 'PLYMSCRIPT'
+          /* AmitOS Plymouth Theme — static splash + native progress bar */
+
+          /* ── Background (static clean image, no bar baked in) ── */
+          wallpaper_image = Image("splash.png");
+          screen_width    = Plymouth.GetWidth();
+          screen_height   = Plymouth.GetHeight();
+          scaled          = wallpaper_image.Scale(screen_width, screen_height);
+          bg_sprite       = Sprite(scaled);
+          bg_sprite.SetZ(-100);
+
+          /* ── Progress bar dimensions ── */
+          bar_height  = 4;
+          bar_y       = screen_height - 48;
+          bar_max_w   = Math.Int(screen_width * 0.60);
+          bar_x       = Math.Int((screen_width - bar_max_w) / 2);
+
+          /* ── Bar background track (dark translucent) ── */
+          track_img = Image.CreateAt(bar_max_w, bar_height);
+          track_img.Rectangle(0, 0, bar_max_w, bar_height, 0.10, 0.10, 0.15, 0.55);
+          track_spr = Sprite(track_img);
+          track_spr.SetPosition(bar_x, bar_y, 1);
+
+          /* ── Glowing cyan fill bar ── */
+          fill_img = Image.CreateAt(bar_max_w, bar_height);
+          fill_spr = Sprite(fill_img);
+          fill_spr.SetPosition(bar_x, bar_y, 2);
+
+          global.progress = 0;
+
+          fun refresh_callback() {
+          }
+          Plymouth.SetRefreshFunction(refresh_callback);
+
+          fun progress_callback(duration, progress) {
+              global.progress = progress;
+              fill_w = Math.Int(bar_max_w * progress);
+              if (fill_w < 2) fill_w = 2;
+              new_fill = Image.CreateAt(fill_w, bar_height);
+              /* Cyan glow: R=0 G=0.78 B=1.0 */
+              new_fill.Rectangle(0, 0, fill_w, bar_height, 0.0, 0.78, 1.0, 1.0);
+              /* Soft inner highlight */
+              new_fill.Rectangle(0, 0, fill_w, 1,           0.4, 0.95, 1.0, 0.7);
+              fill_spr.SetImage(new_fill);
+          }
+          Plymouth.SetBootProgressFunction(progress_callback);
+
+          fun quit_callback() {
+              bg_sprite.SetOpacity(0);
+              track_spr.SetOpacity(0);
+              fill_spr.SetOpacity(0);
+          }
+          Plymouth.SetQuitFunction(quit_callback);
+          PLYMSCRIPT
+
+          echo "[OK] Bootlogo (640x480) and Splash (1920x1080) placed in build tree."
+          echo "[OK] Plymouth amitos theme created."
+
+          # Patch lb_binary_syslinux: make bootlogo missing non-fatal (belt & suspenders)
+          sudo sed -i \
+            's|exec [0-9]\+> binary/isolinux/bootlogo|true \&\& exec 9>/dev/null \# bootlogo provided|g' \
+            /usr/lib/live/build/lb_binary_syslinux 2>/dev/null || true
+
       - name: Build ISO
         run: |
           set -o pipefail
@@ -497,8 +644,36 @@ jobs:
             sudo sed -i 's/^          //' "$f" 2>/dev/null || true
           done
 
+          # Ensure binary/isolinux/bootlogo exists right before lb build
+          # (lb_binary_syslinux line 365 requires this file to exist)
+          sudo mkdir -p binary/isolinux
+          if [ ! -f binary/isolinux/bootlogo ]; then
+            sudo python3 -c "
+import struct, zlib
+def write_png(path, w=640, h=480):
+    row = bytes([0]) + bytes([10,15,40]*w)
+    raw = row * h
+    comp = zlib.compress(raw, 1)
+    def ck(n,d): c=n+d; return struct.pack('>I',len(d))+c+struct.pack('>I',zlib.crc32(c)&0xffffffff)
+    png = b'\\x89PNG\\r\\n\\x1a\\n'
+    png += ck(b'IHDR', struct.pack('>IIBBBBB',w,h,8,2,0,0,0))
+    png += ck(b'IDAT', comp)
+    png += ck(b'IEND', b'')
+    open(path,'wb').write(png)
+write_png('binary/isolinux/bootlogo')
+print('[OK] bootlogo created')
+"
+          fi
+
           echo "=== Starting lb build ==="
-          sudo lb build
+          sudo lb build 2>&1 | tee /tmp/lb-build.log
+          BUILD_EXIT=${PIPESTATUS[0]}
+          if [ $BUILD_EXIT -ne 0 ]; then
+            echo "=== lb build FAILED (exit $BUILD_EXIT) ==="
+            echo "=== Last 100 lines of build log ==="
+            tail -100 /tmp/lb-build.log || true
+            exit $BUILD_EXIT
+          fi
 
       - name: Upload ISO Artifact
         uses: actions/upload-artifact@v4
