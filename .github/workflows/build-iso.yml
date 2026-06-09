@@ -153,8 +153,8 @@ jobs:
           echo "IyEvYmluL2Jhc2gKZWNobyAibmFtZXNlcnZlciA4LjguOC44IiA+IC9ldGMvcmVzb2x2LmNvbmY=" | base64 -di | sudo tee "$BUILD_DIR/config/hooks/normal/0000-dns-fix.hook.chroot" > /dev/null
           sudo chmod +x "$BUILD_DIR/config/hooks/normal/0000-dns-fix.hook.chroot"
 
-          # Plymouth activation hook
-          echo "IyEvYmluL2Jhc2gKc2V0IC1lCmlmIGNvbW1hbmQgLXYgcGx5bW91dGgtc2V0LWRlZmF1bHQtdGhlbWUgPi9kZXYvbnVsbCAyPiYxOyB0aGVuCiAgICBwbHltb3V0aC1zZXQtZGVmYXVsdC10aGVtZSBhbWl0b3MgMj4vZGV2L251bGwgfHwgXAogICAgcGx5bW91dGgtc2V0LWRlZmF1bHQtdGhlbWUgLVIgYW1pdG9zIDI+L2Rldi9udWxsIHx8IHRydWUKZmkKaWYgWyAtZiAvdXNyL3NiaW4vdXBkYXRlLWluaXRyYW1mcyBdOyB0aGVuCiAgICB1cGRhdGUtaW5pdHJhbWZzIC11IDI+L2Rldi9udWxsIHx8IHRydWUKZmk=" | base64 -di | sudo tee "$BUILD_DIR/config/hooks/normal/0050-plymouth.hook.chroot" > /dev/null
+          # Plymouth activation hook (no update-initramfs - lb build handles initramfs)
+          echo "IyEvYmluL2Jhc2gKaWYgY29tbWFuZCAtdiBwbHltb3V0aC1zZXQtZGVmYXVsdC10aGVtZSA+L2Rldi9udWxsIDI+JjE7IHRoZW4KICAgIHBseW1vdXRoLXNldC1kZWZhdWx0LXRoZW1lIGFtaXRvcyAyPi9kZXYvbnVsbCB8fCB0cnVlCmZpCg==" | base64 -di | sudo tee "$BUILD_DIR/config/hooks/normal/0050-plymouth.hook.chroot" > /dev/null
           sudo chmod +x "$BUILD_DIR/config/hooks/normal/0050-plymouth.hook.chroot"
 
           # Super-fix hook
