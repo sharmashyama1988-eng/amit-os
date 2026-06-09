@@ -149,6 +149,11 @@ jobs:
         run: |
           BUILD_DIR="/tmp/amitos-build"
 
+          # CRITICAL: Force gzip initramfs + make update-initramfs no-op during pkg install
+          # Prevents cpio zstd errors when linux-image-amd64 postinst runs update-initramfs
+          echo "IyEvYmluL2Jhc2gKIyBQcmUtaW5zdGFsbCBob29rOiBwcmV2ZW50IHVwZGF0ZS1pbml0cmFtZnMgZnJvbSBydW5uaW5nIGR1cmluZyBwYWNrYWdlIGluc3RhbGwKIyBsaXZlLWJ1aWxkIGhhbmRsZXMgaW5pdHJhbWZzOyBydW5uaW5nIGl0IGluc2lkZSBjaHJvb3QgY2F1c2VzIGNwaW8genN0ZCBlcnJvcnMKbWtkaXIgLXAgL2V0Yy9pbml0cmFtZnMtdG9vbHMvY29uZi5kCmVjaG8gIkNPTVBSRVNTPWd6aXAiID4gL2V0Yy9pbml0cmFtZnMtdG9vbHMvY29uZi5kL2xpdmUtYnVpbGQuY29uZgojIFJlcGxhY2UgdXBkYXRlLWluaXRyYW1mcyB3aXRoIGEgbm8tb3Agc28ga2VybmVsIHBvc3RpbnN0IGRvZXNuJ3QgZmFpbAppZiBbIC1mIC91c3Ivc2Jpbi91cGRhdGUtaW5pdHJhbWZzIF07IHRoZW4KICAgIG12IC91c3Ivc2Jpbi91cGRhdGUtaW5pdHJhbWZzIC91c3Ivc2Jpbi91cGRhdGUtaW5pdHJhbWZzLnJlYWwKZmkKcHJpbnRmICcjIS9iaW4vYmFzaFxuZXhpdCAwXG4nID4gL3Vzci9zYmluL3VwZGF0ZS1pbml0cmFtZnMKY2htb2QgK3ggL3Vzci9zYmluL3VwZGF0ZS1pbml0cmFtZnMK" | base64 -di | sudo tee "$BUILD_DIR/config/hooks/normal/0000-initramfs-fix.hook.chroot" > /dev/null
+          sudo chmod +x "$BUILD_DIR/config/hooks/normal/0000-initramfs-fix.hook.chroot"
+
           # DNS fix hook
           echo "IyEvYmluL2Jhc2gKZWNobyAibmFtZXNlcnZlciA4LjguOC44IiA+IC9ldGMvcmVzb2x2LmNvbmY=" | base64 -di | sudo tee "$BUILD_DIR/config/hooks/normal/0000-dns-fix.hook.chroot" > /dev/null
           sudo chmod +x "$BUILD_DIR/config/hooks/normal/0000-dns-fix.hook.chroot"
