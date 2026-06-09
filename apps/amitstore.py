@@ -116,8 +116,9 @@ class AmitStore(Gtk.Window):
         self._build()
 
     def _check_installed(self):
-        for pkg, *_ in APPS:
-            if shutil.which(_.[-1]) or shutil.which(pkg):
+        for app in APPS:
+            pkg = app[0]
+            if shutil.which(app[-1]) or shutil.which(pkg):
                 self._installed.add(pkg)
 
     def _build(self):
