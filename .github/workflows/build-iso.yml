@@ -60,7 +60,6 @@ jobs:
             --linux-packages "linux-image" \
             --linux-flavours "amd64" \
             --binary-images iso-hybrid \
-            --iso-builder xorriso \
             --compression gzip \
             --bootappend-live "boot=live components quiet splash hostname=amitos username=amit" \
             --iso-volume "AmitOS 1.0" \
@@ -124,6 +123,7 @@ jobs:
           # Clean verified package list for Debian Bookworm (base64 encoded)
           echo "a2RlLXBsYXNtYS1kZXNrdG9wCnBsYXNtYS13b3Jrc3BhY2UKcGxhc21hLW5tCmtzY3JlZW4KcG93ZXJkZXZpbApzZGRtCnNkZG0tdGhlbWUtYnJlZXplCmJyZWV6ZQpicmVlemUtZ3RrLXRoZW1lCmt3aW4teDExCnhvcmcKeHNlcnZlci14b3JnCmNocm9taXVtCnFhbGN1bGF0ZS1ndGsKZG9scGhpbgprb25zb2xlCmthdGUKdmxjCmd3ZW52aWV3CmtkZS1zcGVjdGFjbGUKcGxhc21hLXN5c3RlbW1vbml0b3IKa3N5c3RlbXN0YXRzCmFyawpva3VsYXIKa25vdGVzCmxpYnJlb2ZmaWNlLXdyaXRlcgpsaWJyZW9mZmljZS1jYWxjCnVmdwphcHBhcm1vcgphcHBhcm1vci1wcm9maWxlcwphcHBhcm1vci11dGlscwpjbGFtYXYKcmtodW50ZXIKZmFpbDJiYW4KdW5hdHRlbmRlZC11cGdyYWRlcwpmb250cy1ub3RvCmZvbnRzLW5vdG8tY29sb3ItZW1vamkKZm9udHMtaGFjay10dGYKbmV0d29yay1tYW5hZ2VyCm5ldHdvcmstbWFuYWdlci1nbm9tZQpjdXJsCndnZXQKbmV0LXRvb2xzCm5ldHdvcmstbWFuYWdlci1vcGVudnBuCm5ldHdvcmstbWFuYWdlci1wcHRwCm1vZGVtbWFuYWdlcgptb2JpbGUtYnJvYWRiYW5kLXByb3ZpZGVyLWluZm8KZ3N0cmVhbWVyMS4wLXBsdWdpbnMtZ29vZApnc3RyZWFtZXIxLjAtcGx1Z2lucy1iYWQKZ3N0cmVhbWVyMS4wLXBsdWdpbnMtdWdseQpnc3RyZWFtZXIxLjAtbGliYXYKZmZtcGVnCmxpYmF2Y29kZWMtZXh0cmEKbGludXgtaW1hZ2UtYW1kNjQKbGludXgtaGVhZGVycy1hbWQ2NApsaXZlLWJvb3QKbGl2ZS1jb25maWcKbGl2ZS1jb25maWctc3lzdGVtZApweXRob24zLWdpCnB5dGhvbjMtZ2ktY2Fpcm8KZ2lyMS4yLWd0ay0zLjAKZysrCmludGVsLW1pY3JvY29kZQphbWQ2NC1taWNyb2NvZGUKeHNlcnZlci14b3JnLXZpZGVvLWludGVsCmxpYmdsMS1tZXNhLWRyaQptZXNhLXZ1bGthbi1kcml2ZXJzCnhzZXJ2ZXIteG9yZy12aWRlby1hbWRncHUKeHNlcnZlci14b3JnLXZpZGVvLW5vdXZlYXUKZmlybXdhcmUtbWlzYy1ub25mcmVlCnhzZXJ2ZXIteG9yZy12aWRlby1mYmRldgp4c2VydmVyLXhvcmctdmlkZW8tdmVzYQpmaXJtd2FyZS1pd2x3aWZpCmZpcm13YXJlLXJlYWx0ZWsKZmlybXdhcmUtYXRoZXJvcwp3cGFzdXBwbGljYW50CndpcmVsZXNzLXRvb2xzCml3CnJma2lsbApibHVldG9vdGgKYmx1ZXoKYmx1ZXotdG9vbHMKYmx1ZWRldmlsCmJsdWVtYW4KYWxzYS11dGlscwpwYXZ1Y29udHJvbApwbGFzbWEtcGEKcGlwZXdpcmUKcGlwZXdpcmUtcHVsc2UKcGlwZXdpcmUtYWxzYQp3aXJlcGx1bWJlcgp4c2VydmVyLXhvcmctaW5wdXQtbGliaW5wdXQKeHNlcnZlci14b3JnLWlucHV0LXN5bmFwdGljcwpsaWJpbnB1dC1iaW4KbnRmcy0zZwpleGZhdHByb2dzCmRvc2ZzdG9vbHMKYnRyZnMtcHJvZ3MKdWRpc2tzMgpndmZzCmd2ZnMtYmFja2VuZHMKdjRsLXV0aWxzCmN1cHMKY3Vwcy1maWx0ZXJzCmhwbGlwCnNhbmUtdXRpbHMKc2ltcGxlLXNjYW4KYWNwaQphY3BpZAp0bHAKdGhlcm1hbGQKY3B1ZnJlcXV0aWxzCmdwYXJ0ZWQKcHl0aG9uMwpweXRob24zLWRidXMKcDd6aXAtZnVsbAp6aXAKdW56aXAKaHRvcApuYW5vCmJhc2gtY29tcGxldGlvbgpwY2l1dGlscwp1c2J1dGlscwpkY3RybC10b29scwp6ZW5pdHkKY2FsYW1hcmVzCmlzb2xpbnV4CnN5c2xpbnV4CnN5c2xpbnV4LWNvbW1vbgpwbHltb3V0aApwbHltb3V0aC10aGVtZXMK" | base64 -di | sudo tee "$BUILD_DIR/config/package-lists/amitos.list.chroot" > /dev/null
           echo "[OK] Package list written: $(wc -l < "$BUILD_DIR/config/package-lists/amitos.list.chroot") packages"
+          echo "syslinux-utils" | sudo tee -a "$BUILD_DIR/config/package-lists/amitos.list.chroot" > /dev/null
       - name: Create AmitShield Daemon
         run: |
           BUILD_DIR="/tmp/amitos-build"
