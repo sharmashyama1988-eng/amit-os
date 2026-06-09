@@ -31,7 +31,7 @@ jobs:
             live-build live-config live-boot \
             debootstrap squashfs-tools xorriso \
             grub-efi-amd64-bin grub-pc-bin mtools \
-            syslinux isolinux syslinux-common \
+            syslinux isolinux syslinux-common syslinux-utils \
             wget curl git python3 python3-pip dos2unix
 
       - name: Install Python Imaging Library
