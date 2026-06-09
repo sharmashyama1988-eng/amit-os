@@ -60,6 +60,7 @@ jobs:
             --linux-packages "linux-image" \
             --linux-flavours "amd64" \
             --binary-images iso-hybrid \
+            --iso-builder xorriso \
             --compression gzip \
             --bootappend-live "boot=live components quiet splash hostname=amitos username=amit" \
             --iso-volume "AmitOS 1.0" \
