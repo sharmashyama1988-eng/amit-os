@@ -122,85 +122,17 @@ jobs:
           sudo mkdir -p "$BUILD_DIR/config/package-lists"
           # Package list stored as base64 to avoid YAML heredoc indentation issues
           echo "a2RlLXBsYXNtYS1kZXNrdG9wCnBsYXNtYS13b3Jrc3BhY2UKcGxhc21hLW5tCmtzY3JlZW4KcG93ZXJkZXZpbApzZGRtCnNkZG0tdGhlbWUtYnJlZXplCmJyZWV6ZQpicmVlemUtZ3RrLXRoZW1lCmt3aW4teDExCnhvcmcKeHNlcnZlci14b3JnCmNocm9taXVtCnFhbGN1bGF0ZS1ndGsKZ25vbWUtY2FsZW5kYXIKZG9scGhpbgprb25zb2xlCmthdGUKdmxjCmd3ZW52aWV3CnJoeXRobWJveApzcGVjdGFjbGUKcGxhc21hLXN5c3RlbW1vbml0b3IKa3N5c3RlbXN0YXRzCmFyawpva3VsYXIKa25vdGVzCmxpYnJlb2ZmaWNlLXdyaXRlcgpsaWJyZW9mZmljZS1jYWxjCnVmdwphcHBhcm1vcgphcHBhcm1vci1wcm9maWxlcwphcHBhcm1vci11dGlscwpjbGFtYXYKcmtodW50ZXIKZmFpbDJiYW4KdW5hdHRlbmRlZC11cGdyYWRlcwpmb250cy1ub3RvCmZvbnRzLW5vdG8tY29sb3ItZW1vamkKZm9udHMtb3Blbi1zYW5zCmZvbnRzLWhhY2stdHRmCm5ldHdvcmstbWFuYWdlcgpuZXR3b3JrLW1hbmFnZXItZ25vbWUKY3VybAp3Z2V0Cm5ldC10b29scwpuZXR3b3JrLW1hbmFnZXItb3BlbnZwbgpuZXR3b3JrLW1hbmFnZXItcHB0cAptb2RlbW1hbmFnZXIKbW9iaWxlLWJyb2FkYmFuZC1wcm92aWRlci1pbmZvCmdzdHJlYW1lcjEuMC1wbHVnaW5zLWdvb2QKZ3N0cmVhbWVyMS4wLXBsdWdpbnMtYmFkCmdzdHJlYW1lcjEuMC1wbHVnaW5zLXVnbHkKZ3N0cmVhbWVyMS4wLWxpYmF2CmZmbXBlZwpsaWJhdmNvZGVjLWV4dHJhCmxpbnV4LWltYWdlLWFtZDY0CmxpbnV4LWhlYWRlcnMtYW1kNjQKbGl2ZS1ib290CmxpdmUtY29uZmlnCmxpdmUtY29uZmlnLXN5c3RlbWQKcHl0aG9uMy1naQpweXRob24zLWdpLWNhaXJvCmdpcjEuMi1ndGstMy4wCmdpcjEuMi1ndGstNC4wCmcrKwppbnRlbC1taWNyb2NvZGUKYW1kNjQtbWljcm9jb2RlCnhzZXJ2ZXIteG9yZy12aWRlby1pbnRlbApsaWJnbDEtbWVzYS1kcmkKbWVzYS12dWxrYW4tZHJpdmVycwp4c2VydmVyLXhvcmctdmlkZW8tYW1kZ3B1CnhzZXJ2ZXIteG9yZy12aWRlby1ub3V2ZWF1CmZpcm13YXJlLW1pc2Mtbm9uZnJlZQp4c2VydmVyLXhvcmctdmlkZW8tZmJkZXYKeHNlcnZlci14b3JnLXZpZGVvLXZlc2EKZmlybXdhcmUtaXdsd2lmaQpmaXJtd2FyZS1yZWFsdGVrCmZpcm13YXJlLWF0aGVyb3MKd3Bhc3VwcGxpY2FudAp3aXJlbGVzcy10b29scwppdwpyZmtpbGwKYmx1ZXRvb3RoCmJsdWV6CmJsdWV6LXRvb2xzCmJsdWVkZXZpbApibHVlbWFuCmFsc2EtdXRpbHMKcGF2dWNvbnRyb2wKcGxhc21hLXBhCnBpcGV3aXJlCnBpcGV3aXJlLXB1bHNlCnBpcGV3aXJlLWFsc2EKd2lyZXBsdW1iZXIKeHNlcnZlci14b3JnLWlucHV0LWxpYmlucHV0CnhzZXJ2ZXIteG9yZy1pbnB1dC1zeW5hcHRpY3MKbGliaW5wdXQtYmluCm50ZnMtM2cKZXhmYXRwcm9ncwpkb3Nmc3Rvb2xzCGJ0cmZzLXByb2dzCnVkaXNrczIKZ3ZmcwpndmZzLWJhY2tlbmRzCnY0bC11dGlscwpjdXBzCmN1cHMtZmlsdGVycwpocGxpcApzYW5lLXV0aWxzCnNpbXBsZS1zY2FuCmFjcGkKYWNwaWQKdGxwCnRoZXJtYWxkCmNwdWZyZXF1dGlscwpncGFydGVkCnB5dGhvbjMKcHl0aG9uMy1kYnVzCnA3emlwLWZ1bGwKemlwCnVuemlwCGh0b3AKbmFubwpiYXNoLWNvbXBsZXRpb24KcGNpdXRpbHMKdXNidXRpbHMKZGN0cmwtdG9vbHMKemVuaXR5CmNhbGFtYXJlcwppc29saW51eApzeXNsaW51eApzeXNsaW51eC1jb21tb24KcGx5bW91dGgKcGx5bW91dGgtdGhlbWVzCmxpYnBseW1vdXRoNQ==" \
+          echo "a2RlLXBsYXNtYS1kZXNrdG9wCnBsYXNtYS13b3Jrc3BhY2UKcGxhc21hLW5tCmtzY3JlZW4KcG93ZXJkZXZpbApzZGRtCnNkZG0tdGhlbWUtYnJlZXplCmJyZWV6ZQpicmVlemUtZ3RrLXRoZW1lCmt3aW4teDExCnhvcmcKeHNlcnZlci14b3JnCmNocm9taXVtCnFhbGN1bGF0ZS1ndGsKZ25vbWUtY2FsZW5kYXIKZG9scGhpbgprb25zb2xlCmthdGUKdmxjCmd3ZW52aWV3CnJoeXRobWJveApzcGVjdGFjbGUKcGxhc21hLXN5c3RlbWlNb25pdG9yCmNzeXN0ZW1zdGF0cwphcmsKb2t1bGEKa25vdGVzCmxpYnJlb2ZmaWNlLXdyaXRlcgpsaWJyZW9mZmljZS1jYWxjCnVmdwphcHBhcm1vcgphcHBhcm1vci1wcm9maWxlcwphcHBhcm1vci11dGlscwpjbGFtYXYKcmtodW50ZXIKZmFpbDJiYW4KdW5hdHRlbmRlZC11cGdyYWRlcwpmb250cy1ub3RvCmZvbnRzLW5vdG8tY29sb3ItZW1vamkKZm9udHMtb3Blbi1zYW5zCmZvbnRzLWhhY2stdHRmCm5ldHdvcmstbWFuYWdlcgpuZXR3b3JrLW1hbmFnZXItZ25vbWUKY3VybAp3Z2V0Cm5ldC10b29scwpuZXR3b3JrLW1hbmFnZXItb3BlbnZwbgpuZXR3b3JrLW1hbmFnZXItcHB0cAptb2RlbW1hbmFnZXIKbW9iaWxlLWJyb2FkYmFuZC1wcm92aWRlci1pbmZvCmdzdHJlYW1lcjEuMC1wbHVnaW5zLWdvb2QKZ3N0cmVhbWVyMS4wLXBsdWdpbnMtYmFkCmdzdHJlYW1lcjEuMC1wbHVnaW5zLXVnbHkKZ3N0cmVhbWVyMS4wLWxpYmF2CmZmbXBlZwpsaWJhdmNvZGVjLWV4dHJhCmxpbnV4LWltYWdlLWFtZDY0CmxpbnV4LWhlYWRlcnMtYW1kNjQKbGl2ZS1ib290CmxpdmUtY29uZmlnCmxpdmUtY29uZmlnLXN5c3RlbWQKcHl0aG9uMy1naQpweXRob24zLWdpLWNhaXJvCmdpcjEuMi1ndGstMy4wCmdpcjEuMi1ndGstNC4wCmcrKwppbnRlbC1taWNyb2NvZGUKYW1kNjQtbWljcm9jb2RlCnhzZXJ2ZXIteG9yZy12aWRlby1pbnRlbApsaWJnbDEtbWVzYS1kcmkKbWVzYS12dWxrYW4tZHJpdmVycwp4c2VydmVyLXhvcmctdmlkZW8tYW1kZ3B1CnhzZXJ2ZXIteG9yZy12aWRlby1ub3V2ZWF1CmZpcm13YXJlLW1pc2Mtbm9uZnJlZQp4c2VydmVyLXhvcmctdmlkZW8tZmJkZXYKeHNlcnZlci14b3JnLXZpZGVvLXZlc2EKZmlybXdhcmUtaXdsd2lmaQpmaXJtd2FyZS1yZWFsdGVrCmZpcm13YXJlLWF0aGVyb3MKd3Bhc3VwcGxpY2FudAp3aXJlbGVzcy10b29scwppdwpyZmtpbGwKYmx1ZXRvb3RoCmJsdWV6CmJsdWV6LXRvb2xzCmJsdWVkZXZpbApibHVlbWFuCmFsc2EtdXRpbHMKcGF2dWNvbnRyb2wKcGxhc21hLXBhCnBpcGV3aXJlCnBpcGV3aXJlLXB1bHNlCnBpcGV3aXJlLWFsc2EKd2lyZXBsdW1iZXIKeHNlcnZlci14b3JnLWlucHV0LWxpYmlucHV0CnhzZXJ2ZXIteG9yZy1pbnB1dC1zeW5hcHRpY3MKbGliaW5wdXQtYmluCm50ZnMtM2cKZXhmYXRwcm9ncwpkb3Nmc3Rvb2xzCGJ0cmZzLXByb2dzCnVkaXNrczIKZ3ZmcwpndmZzLWJhY2tlbmRzCnY0bC11dGlscwpjdXBzCmN1cHMtZmlsdGVycwpocGxpcApzYW5lLXV0aWxzCnNpbXBsZS1zY2FuCmFjcGkKYWNwaWQKdGxwCnRoZXJtYWxkCmNwdWZyZXF1dGlscwpncGFydGVkCnB5dGhvbjMKcHl0aG9uMy1kYnVzCnA3emlwLWZ1bGwKemlwCnVuemlwCGh0b3AKbmFubwpiYXNoLWNvbXBsZXRpb24KcGNpdXRpbHMKdXNidXRpbHMKZGN0cmwtdG9vbHMKemVuaXR5CmNhbGFtYXJlcwppc29saW51eApzeXNsaW51eApzeXNsaW51eC1jb21tb24KcGx5bW91dGgKcGx5bW91dGgtdGhlbWVzCmxpYnBseW1vdXRoNQ==" \
             | base64 -d \
             | sudo tee "$BUILD_DIR/config/package-lists/amitos.list.chroot" > /dev/null
           echo "[OK] Package list written: $(wc -l < "$BUILD_DIR/config/package-lists/amitos.list.chroot") packages"
       - name: Create AmitShield Daemon
         run: |
           BUILD_DIR="/tmp/amitos-build"
-          sudo tee "$BUILD_DIR/config/includes.chroot/usr/local/bin/amitshield" > /dev/null << 'SHIELD'
-#!/usr/bin/env python3
-"""AmitShield Security Engine - Amit OS"""
-import os, sys, time, re, subprocess, threading, json, logging
-from datetime import datetime
-
-logging.basicConfig(filename='/var/log/amitshield.log',
-    format='%(asctime)s [%(levelname)s] %(message)s', level=logging.INFO)
-log = logging.getLogger('amitshield')
-
-SUSPICIOUS = [r'xmrig',r'minerd',r'cpuminer',r'nc -e',r'/dev/tcp/',
-              r'wget.*\|.*bash',r'curl.*\|.*bash']
-DANGEROUS_PORTS = {23,135,137,139,445,3389,5900,4444,1337}
-PROTECTED = {'systemd','sddm','plasmashell','kwin_x11','dbus-daemon',
-             'NetworkManager','amitshield'}
-
-def setup_firewall():
-    cmds = [['ufw','default','deny','incoming'],
-            ['ufw','default','allow','outgoing'],
-            ['ufw','allow','ssh'],['ufw','allow','80/tcp'],
-            ['ufw','allow','443/tcp'],['ufw','--force','enable']]
-    for c in cmds:
-        subprocess.run(c, capture_output=True)
-    for p in DANGEROUS_PORTS:
-        subprocess.run(['ufw','deny',str(p)], capture_output=True)
-    log.info('Firewall active')
-
-def scan_processes():
-    import glob
-    for pid_path in glob.glob('/proc/[0-9]*/cmdline'):
-        try:
-            pid = int(pid_path.split('/')[2])
-            with open(pid_path,'rb') as f:
-                cmd = f.read().replace(b'\x00',b' ').decode(errors='replace')
-            name_path = f'/proc/{pid}/comm'
-            name = open(name_path).read().strip() if os.path.exists(name_path) else ''
-            if name in PROTECTED: continue
-            for pat in SUSPICIOUS:
-                if re.search(pat, cmd, re.IGNORECASE):
-                    log.warning(f'THREAT PID:{pid} NAME:{name} - suspended')
-                    os.kill(pid, 19)
-                    subprocess.Popen(['notify-send','--urgency=critical',
-                        'AmitShield Alert',f'Threat blocked: {name} [PID:{pid}]'])
-                    break
-        except Exception: pass
-
-def main():
-    log.info('=== AmitShield v1.0 starting ===')
-    setup_firewall()
-    scan = 0
-    while True:
-        scan += 1
-        scan_processes()
-        log.info(f'Scan #{scan} complete')
-        time.sleep(30)
-
-if __name__ == '__main__':
-    main()
-SHIELD
+          echo "IyEvdXNyL2Jpbi9lbnYgcHl0aG9uMwoiIiJBbWl0U2hpZWxkIFNlY3VyaXR5IEVuZ2luZSAtIEFtaXQgT1MiIiIKaW1wb3J0IG9zLCBzeXMsIHRpbWUsIHJlLCBzdWJwcm9jZXNzLCB0aHJlYWRpbmcsIGpzb24sIGxvZ2dpbmcKZnJvbSBkYXRldGltZSBpbXBvcnQgZGF0ZXRpbWUKCmxvZ2dpbmcuYmFzaWNDb25maWcoZmlsZW5hbWU9Jy92YXIvbG9nL2FtaXRzaGllbGQubG9nJywKICAgIGZvcm1hdD0nJShhc2N0aW1lKXMgWyUobGV2ZWxuYW1lKXNdICUobWVzc2FnZSlzJywgbGV2ZWw9bG9nZ2luZy5JTkZPKQpsb2cgPSBsb2dnaW5nLmdldExvZ2dlcignYW1pdHNoaWVsZCcpCgpTVVNQSUNJT1VTID0gW3IneG1yaWcnLHInbWluZXJkJyxyJ2NwdW1pbmVyJyxyJ25jIC1lJyxyJy9kZXYvdGNwLycsCiAgICAgICAgICAgICAgcid3Z2V0LipcfC4qYmFzaCcscidjdXJsLipcfC4qYmFzaCddCkRBTkdFUk9VU19QT1JUUyA9IHsyMywxMzUsMTM3LDEzOSw0NDUsMzM4OSw1OTAwLDQ0NDQsMTMzN30KUFJPVEVDVEVEID0geydzeXN0ZW1kJywnc2RkbScsJ3BsYXNtYXNoZWxsJywna3dpbl94MTEnLCdkYnVzLWRhZW1vbicsCiAgICAgICAgICAgICAnTmV0d29ya01hbmFnZXInLCdhbWl0c2hpZWxkJ30KCmRlZiBzZXR1cF9maXJld2FsbCgpOgogICAgY21kcyA9IFtbJ3VmdycsJ2RlZmF1bHQnLCdkZW55JywnaW5jb21pbmcnXSwKICAgICAgICAgICAgWyd1ZncnLCdkZWZhdWx0JywnYWxsb3cnLCdvdXRnb2luZyddLAogICAgICAgICAgICBbJ3VmdycsJ2FsbG93Jywnc3NoJ10sWyd1ZncnLCdhbGxvdycsJzgwL3RjcCddLAogICAgICAgICAgICBbJ3VmdycsJ2FsbG93JywnNDQzL3RjcCddLFsndWZ3JywnLS1mb3JjZScsJ2VuYWJsZSddXQogICAgZm9yIGMgaW4gY21kczoKICAgICAgICBzdWJwcm9jZXNzLnJ1bihjLCBjYXB0dXJlX291dHB1dD1UcnVlKQogICAgZm9yIHAgaW4gREFOR0VST1VTX1BPUlRTOgogICAgICAgIHN1YnByb2Nlc3MucnVuKFsndWZ3JywnZGVueScsc3RyKHApXSwgY2FwdHVyZV9vdXRwdXQ9VHJ1ZSkKICAgIGxvZy5pbmZvKCdGaXJld2FsbCBhY3RpdmUnKQoKZGVmIHNjYW5fcHJvY2Vzc2VzKCk6CiAgICBpbXBvcnQgZ2xvYgogICAgZm9yIHBpZF9wYXRoIGluIGdsb2IuZ2xvYignL3Byb2MvWzAtOV0qL2NtZGxpbmUnKToKICAgICAgICB0cnk6CiAgICAgICAgICAgIHBpZCA9IGludChwaWRfcGF0aC5zcGxpdCgnLycpWzJdKQogICAgICAgICAgICB3aXRoIG9wZW4ocGlkX3BhdGgsJ3JiJykgYXMgZjoKICAgICAgICAgICAgICAgIGNtZCA9IGYucmVhZCgpLnJlcGxhY2UoYidceDAwJyxiJyAnKS5kZWNvZGUoZXJyb3JzPSdyZXBsYWNlJykKICAgICAgICAgICAgbmFtZV9wYXRoID0gZicvcHJvYy97cGlkfS9jb21tJwogICAgICAgICAgICBuYW1lID0gb3BlbihuYW1lX3BhdGgpLnJlYWQoKS5zdHJpcCgpIGlmIG9zLnBhdGguZXhpc3RzKG5hbWVfcGF0aCkgZWxzZSAnJwogICAgICAgICAgICBpZiBuYW1lIGluIFBST1RFQ1RFRDogY29udGludWUKICAgICAgICAgICAgZm9yIHBhdCBpbiBTVVNQSUNJT1VTOgogICAgICAgICAgICAgICAgaWYgcmUuc2VhcmNoKHBhdCwgY21kLCByZS5JR05PUkVDQVNFKToKICAgICAgICAgICAgICAgICAgICBsb2cud2FybmluZyhmJ1RIUkVBVCBQSUQ6e3BpZH0gTkFNRTp7bmFtZX0gLSBzdXNwZW5kZWQnKQogICAgICAgICAgICAgICAgICAgIG9zLmtpbGwocGlkLCAxOSkKICAgICAgICAgICAgICAgICAgICBzdWJwcm9jZXNzLlBvcGVuKFsnbm90aWZ5LXNlbmQnLCctLXVyZ2VuY3k9Y3JpdGljYWwnLAogICAgICAgICAgICAgICAgICAgICAgICAnQW1pdFNoaWVsZCBBbGVydCcsZidUaHJlYXQgYmxvY2tlZDoge25hbWV9IFtQSUQ6e3BpZH1dJ10pCiAgICAgICAgICAgICAgICAgICAgYnJlYWsKICAgICAgICBleGNlcHQgRXhjZXB0aW9uOiBwYXNzCgpkZWYgbWFpbigpOgogICAgbG9nLmluZm8oJz09PSBBbWl0U2hpZWxkIHYxLjAgc3RhcnRpbmcgPT09JykKICAgIHNldHVwX2ZpcmV3YWxsKCkKICAgIHNjYW4gPSAwCiAgICB3aGlsZSBUcnVlOgogICAgICAgIHNjYW4gKz0gMQogICAgICAgIHNjYW5fcHJvY2Vzc2VzKCkKICAgICAgICBsb2cuaW5mbyhmJ1NjYW4gI3tzY2FufSBjb21wbGV0ZScpCiAgICAgICAgdGltZS5zbGVlcCgzMCkKCmlmIF9fbmFtZV9fID09ICdfX21haW5fXyc6CiAgICBtYWluKCk=" | base64 -d | sudo tee "$BUILD_DIR/config/includes.chroot/usr/local/bin/amitshield" > /dev/null
           sudo chmod +x "$BUILD_DIR/config/includes.chroot/usr/local/bin/amitshield"
 
-          sudo tee "$BUILD_DIR/config/includes.chroot/etc/systemd/system/amitshield.service" > /dev/null << 'SVC'
-[Unit]
-Description=AmitShield Security Engine
-After=network.target
-[Service]
-Type=simple
-ExecStart=/usr/local/bin/amitshield
-Restart=on-failure
-RestartSec=5s
-[Install]
-WantedBy=multi-user.target
-SVC
+          echo "W1VuaXRdCkRlc2NyaXB0aW9uPUFtaXRTaGllbGQgU2VjdXJpdHkgRW5naW5lCkFmdGVyPW5ldHdvcmsudGFyZ2V0CltTZXJ2aWNlXQpUeXBlPXNpbXBsZQpFeGVjU3RhcnQ9L3Vzci9sb2NhbC9iaW4vYW1pdHNoaWVsZApSZXN0YXJ0PW9uLWZhaWx1cmUKUmVzdGFydFNlYz01cwpbSW5zdGFsbF0KV2FudGVkQnk9bXVsdGktdXNlci50YXJnZXQ=" | base64 -d | sudo tee "$BUILD_DIR/config/includes.chroot/etc/systemd/system/amitshield.service" > /dev/null
 
       - name: Create Desktop Shortcuts
         run: |
@@ -208,86 +140,35 @@ SVC
           APPS="$BUILD_DIR/config/includes.chroot/usr/share/applications"
           sudo mkdir -p "$APPS"
 
-          sudo tee "$APPS/amitbrowser.desktop" > /dev/null << 'EOF'
-[Desktop Entry]
-Name=AmitBrowser
-Exec=chromium --no-sandbox %U
-Icon=chromium
-Type=Application
-Categories=Network;WebBrowser;
-EOF
+          echo "W0Rlc2t0b3AgRW50cnldCk5hbWU9QW1pdEJyb3dzZXIKRXhlYz1jaHJvbWl1bSAtLW5vLXNhbmRib3ggJVUKSWNvbj1jaHJvbWl1bQpUeXBlPUFwcGxpY2F0aW9uCkNhdGVnb3JpZXM9TmV0d29yaztXZWJCcm93c2VyOw==" | base64 -d | sudo tee "$APPS/amitbrowser.desktop" > /dev/null
 
-          sudo tee "$APPS/amitcalc.desktop" > /dev/null << 'EOF'
-[Desktop Entry]
-Name=AmitCalc
-Exec=qalculate-gtk
-Icon=accessories-calculator
-Type=Application
-Categories=Utility;Calculator;
-EOF
+          echo "W0Rlc2t0b3AgRW50cnldCk5hbWU9QW1pdENhbGMKRXhlYz1xYWxjdWxhdGUtZ3RrCkljb249YWNjZXNzb3JpZXMtY2FsY3VsYXRvcgpUeXBlPUFwcGxpY2F0aW9uCkNhdGVnb3JpZXM9VXRpbGl0eTtDYWxjdWxhdG9yOw==" | base64 -d | sudo tee "$APPS/amitcalc.desktop" > /dev/null
 
-          sudo tee "$APPS/amitfiles.desktop" > /dev/null << 'EOF'
-[Desktop Entry]
-Name=AmitFiles
-Exec=dolphin
-Icon=system-file-manager
-Type=Application
-Categories=System;FileManager;
-EOF
+          echo "W0Rlc2t0b3AgRW50cnldCk5hbWU9QW1pdEZpbGVzCkV4ZWM9ZG9scGhpbgpJY29uPXN5c3RlbS1maWxlLW1hbmFnZXIKVHlwZT1BcHBsaWNhdGlvbgpDYXRlZ29yaWVzPVN5c3RlbTtGaWxlTWFuYWdlcjs=" | base64 -d | sudo tee "$APPS/amitfiles.desktop" > /dev/null
 
-          sudo tee "$APPS/amitshield-ui.desktop" > /dev/null << 'EOF'
-[Desktop Entry]
-Name=AmitShield
-Exec=bash -c "systemctl status amitshield | zenity --text-info --title=AmitShield"
-Icon=security-high
-Type=Application
-Categories=System;Security;
-EOF
+          echo "W0Rlc2t0b3AgRW50cnldCk5hbWU9QW1pdFNoaWVsZApFeGVjPWJhc2ggLWMgInN5c3RlbWN0bCBzdGF0dXMgYW1pdHNoaWVsZCB8IHplbml0eSAtLXRleHQtaW5mbyAtLXRpdGxlPUFtaXRTaGllbGQiCkljb249c2VjdXJpdHktaGlnaApUeXBlPUFwcGxpY2F0aW9uCkNhdGVnb3JpZXM9U3lzdGVtO1NlY3VyaXR5Ow==" | base64 -d | sudo tee "$APPS/amitshield-ui.desktop" > /dev/null
 
       - name: Create Chroot Hooks
         run: |
           BUILD_DIR="/tmp/amitos-build"
 
           # DNS fix hook
-          sudo tee "$BUILD_DIR/config/hooks/normal/0000-dns-fix.hook.chroot" > /dev/null << 'EOF'
-#!/bin/bash
-echo "nameserver 8.8.8.8" > /etc/resolv.conf
-EOF
+          echo "IyEvYmluL2Jhc2gKZWNobyAibmFtZXNlcnZlciA4LjguOC44IiA+IC9ldGMvcmVzb2x2LmNvbmY=" | base64 -d | sudo tee "$BUILD_DIR/config/hooks/normal/0000-dns-fix.hook.chroot" > /dev/null
           sudo chmod +x "$BUILD_DIR/config/hooks/normal/0000-dns-fix.hook.chroot"
 
           # Plymouth activation hook
-          sudo tee "$BUILD_DIR/config/hooks/normal/0050-plymouth.hook.chroot" > /dev/null << 'EOF'
-#!/bin/bash
-set -e
-if command -v plymouth-set-default-theme >/dev/null 2>&1; then
-    plymouth-set-default-theme amitos 2>/dev/null || \
-    plymouth-set-default-theme -R amitos 2>/dev/null || true
-fi
-if [ -f /usr/sbin/update-initramfs ]; then
-    update-initramfs -u 2>/dev/null || true
-fi
-EOF
+          echo "IyEvYmluL2Jhc2gKc2V0IC1lCmlmIGNvbW1hbmQgLXYgcGx5bW91dGgtc2V0LWRlZmF1bHQtdGhlbWUgPi9kZXYvbnVsbCAyPiYxOyB0aGVuCiAgICBwbHltb3V0aC1zZXQtZGVmYXVsdC10aGVtZSBhbWl0b3MgMj4vZGV2L251bGwgfHwgXAogICAgcGx5bW91dGgtc2V0LWRlZmF1bHQtdGhlbWUgLVIgYW1pdG9zIDI+L2Rldi9udWxsIHx8IHRydWUKZmkKaWYgWyAtZiAvdXNyL3NiaW4vdXBkYXRlLWluaXRyYW1mcyBdOyB0aGVuCiAgICB1cGRhdGUtaW5pdHJhbWZzIC11IDI+L2Rldi9udWxsIHx8IHRydWUKZmk=" | base64 -d | sudo tee "$BUILD_DIR/config/hooks/normal/0050-plymouth.hook.chroot" > /dev/null
           sudo chmod +x "$BUILD_DIR/config/hooks/normal/0050-plymouth.hook.chroot"
 
           # Super-fix hook
-          sudo tee "$BUILD_DIR/config/hooks/normal/9999-super-fix.hook.chroot" > /dev/null << 'EOF'
-#!/bin/bash
-export DEBIAN_FRONTEND=noninteractive
-dpkg --configure -a || true
-apt-get install -f -y || true
-[ -e /dev/null ] && rm -f /dev/null
-mknod -m 666 /dev/null c 1 3
-EOF
+          echo "IyEvYmluL2Jhc2gKZXhwb3J0IERFQklBTl9GUk9OVEVORD1ub25pbnRlcmFjdGl2ZQpkcGtnIC0tY29uZmlndXJlIC1hIHx8IHRydWUKYXB0LWdldCBpbnN0YWxsIC1mIC15IHx8IHRydWUKWyAtZSAvZGV2L251bGwgXSAmJiBybSAtZiAvZGV2L251bGwKbWtub2QgLW0gNjY2IC9kZXYvbnVsbCBjIDEgMw==" | base64 -d | sudo tee "$BUILD_DIR/config/hooks/normal/9999-super-fix.hook.chroot" > /dev/null
           sudo chmod +x "$BUILD_DIR/config/hooks/normal/9999-super-fix.hook.chroot"
 
       - name: Create Sources List
         run: |
           BUILD_DIR="/tmp/amitos-build"
           sudo mkdir -p "$BUILD_DIR/config/includes.chroot/etc/apt"
-          sudo tee "$BUILD_DIR/config/includes.chroot/etc/apt/sources.list" > /dev/null << 'EOF'
-deb http://deb.debian.org/debian bookworm main contrib non-free non-free-firmware
-deb http://deb.debian.org/debian bookworm-updates main contrib non-free non-free-firmware
-EOF
+          echo "ZGViIGh0dHA6Ly9kZWIuZGViaWFuLm9yZy9kZWJpYW4gYm9va3dvcm0gbWFpbiBjb250cmliIG5vbi1mcmVlIG5vbi1mcmVlLWZpcm13YXJlCmRlYiBodHRwOi8vZGViLmRlYmlhbi5vcmcvZGViaWFuIGJvb2t3b3JtLXVwZGF0ZXMgbWFpbiBjb250cmliIG5vbi1mcmVlIG5vbi1mcmVlLWZpcm13YXJl" | base64 -d | sudo tee "$BUILD_DIR/config/includes.chroot/etc/apt/sources.list" > /dev/null
 
       - name: Copy Boot Files
         run: |
@@ -325,133 +206,13 @@ EOF
           sudo mkdir -p "$BUILD_DIR/config/includes.chroot/usr/share/plymouth/themes/amitos"
           sudo mkdir -p "$BUILD_DIR/config/includes.chroot/usr/share/pixmaps"
 
-          python3 << 'PYEOF'
-import os, shutil, sys
-try:
-    from PIL import Image
-    HAS_PIL = True
-except ImportError:
-    HAS_PIL = False
-    import struct, zlib
-
-REPO  = os.environ['GITHUB_WORKSPACE']
-BUILD = '/tmp/amitos-build'
-
-def write_fallback_png(path, w=640, h=480):
-    """Write minimal dark-navy PNG without Pillow."""
-    import struct, zlib
-    row = bytes([0]) + bytes([10, 14, 38] * w)
-    raw = row * h
-    comp = zlib.compress(raw, 1)
-    def ck(n, d):
-        c = n + d
-        return struct.pack('>I', len(d)) + c + struct.pack('>I', zlib.crc32(c) & 0xffffffff)
-    png = b'\x89PNG\r\n\x1a\n'
-    png += ck(b'IHDR', struct.pack('>IIBBBBB', w, h, 8, 2, 0, 0, 0))
-    png += ck(b'IDAT', comp)
-    png += ck(b'IEND', b'')
-    os.makedirs(os.path.dirname(path) or '.', exist_ok=True)
-    with open(path, 'wb') as f:
-        f.write(png)
-    print(f'  [OK] fallback PNG -> {path}')
-
-def save_png(img_or_path, dest, w, h):
-    os.makedirs(os.path.dirname(dest) or '.', exist_ok=True)
-    if HAS_PIL:
-        if isinstance(img_or_path, str):
-            img = Image.open(img_or_path).convert('RGB').resize((w, h), Image.LANCZOS)
-        else:
-            img = img_or_path.resize((w, h), Image.LANCZOS)
-        img.save(dest, 'PNG', optimize=True)
-    else:
-        write_fallback_png(dest, w, h)
-    kb = os.path.getsize(dest) // 1024
-    print(f'  [OK] {dest}  ({kb} KB)')
-
-boot_src   = os.path.join(REPO, 'branding', 'bootlogo.png')
-splash_src = os.path.join(REPO, 'branding', 'splash.png')
-
-# -- syslinux bootlogo (640x480) -----------------------------------------
-bootlogo_dests = [
-    f'{BUILD}/binary/isolinux/bootlogo',
-    f'{BUILD}/config/bootloaders/isolinux/bootlogo',
-    f'{BUILD}/config/includes.binary/isolinux/bootlogo',
-]
-for d in bootlogo_dests:
-    save_png(boot_src, d, 640, 480)
-
-# -- Plymouth splash (1920x1080) ------------------------------------------
-splash_dests = [
-    f'{BUILD}/config/includes.chroot/usr/share/plymouth/themes/amitos/splash.png',
-    f'{BUILD}/config/includes.chroot/usr/share/pixmaps/amitos-splash.png',
-]
-for d in splash_dests:
-    save_png(splash_src, d, 1920, 1080)
-
-# -- Copy originals into branding dir inside chroot -----------------------
-branding_dir = f'{BUILD}/config/includes.chroot/usr/local/amitos/branding'
-os.makedirs(branding_dir, exist_ok=True)
-shutil.copy(boot_src,   os.path.join(branding_dir, 'bootlogo.png'))
-shutil.copy(splash_src, os.path.join(branding_dir, 'splash.png'))
-
-print('[OK] All branding images ready.')
-PYEOF
+          echo "aW1wb3J0IG9zLCBzaHV0aWwsIHN5cwp0cnk6CiAgICBmcm9tIFBJTCBpbXBvcnQgSW1hZ2UKICAgIEhBU19QSUwgPSBUcnVlCmV4Y2VwdCBJbXBvcnRFcnJvcjoKICAgIEhBU19QSUwgPSBGYWxzZQogICAgaW1wb3J0IHN0cnVjdCwgemxpYgoKUkVQTyAgPSBvcy5lbnZpcm9uWydHSVRIVUJfV09SS1NQQUNFJ10KQlVJTEQgPSAnL3RtcC9hbWl0b3MtYnVpbGQnCgpkZWYgd3JpdGVfZmFsbGJhY2tfcG5nKHBhdGgsIHc9NjQwLCBoPTQ4MCk6CiAgICAiIiJXcml0ZSBtaW5pbWFsIGRhcmstbmF2eSBQTkcgd2l0aG91dCBQaWxsb3cuIiIiCiAgICBpbXBvcnQgc3RydWN0LCB6bGliCiAgICByb3cgPSBieXRlcyhbMF0pICsgYnl0ZXMoWzEwLCAxNCwgMzhdICogdykKICAgIHJhdyA9IHJvdyAqIGgKICAgIGNvbXAgPSB6bGliLmNvbXByZXNzKHJhdywgMSkKICAgIGRlZiBjayhuLCBkKToKICAgICAgICBjID0gbiArIGQKICAgICAgICByZXR1cm4gc3RydWN0LnBhY2soJz5JJywgbGVuKGQpKSArIGMgKyBzdHJ1Y3QucGFjaygnPkknLCB6bGliLmNyYzMyKGMpICYgMHhmZmZmZmZmZikKICAgIHBuZyA9IGInXHg4OVBOR1xyXG5ceDFhXG4nCiAgICBwbmcgKz0gY2soYidJSERSJywgc3RydWN0LnBhY2soJz5JSUJCQkJCJywgdywgaCwgOCwgMiwgMCwgMCwgMCkpCiAgICBwbmcgKz0gY2soYidJREFUJywgY29tcCkKICAgIHBuZyArPSBjayhiJ0lFTkQnLCBiJycpCiAgICBvcy5tYWtlZGlycyhvcy5wYXRoLmRpcm5hbWUocGF0aCkgb3IgJy4nLCBleGlzdF9vaz1UcnVlKQogICAgd2l0aCBvcGVuKHBhdGgsICd3YicpIGFzIGY6CiAgICAgICAgZi53cml0ZShwbmcpCiAgICBwcmludChmJyAgW09LXSBmYWxsYmFjayBQTkcgLT4ge3BhdGh9JykKCmRlZiBzYXZlX3BuZyhpbWdfb3JfcGF0aCwgZGVzdCwgdywgaCk6CiAgICBvcy5tYWtlZGlycyhvcy5wYXRoLmRpcm5hbWUoZGVzdCkgb3IgJy4nLCBleGlzdF9vaz1UcnVlKQogICAgaWYgSEFTX1BJTDoKICAgICAgICBpZiBpc2luc3RhbmNlKGltZ19vcl9wYXRoLCBzdHIpOgogICAgICAgICAgICBpbWcgPSBJbWFnZS5vcGVuKGltZ19vcl9wYXRoKS5jb252ZXJ0KCdSR0InKS5yZXNpemUoKHcsIGgpLCBJbWFnZS5MQU5DWk9TKQogICAgICAgIGVsc2U6CiAgICAgICAgICAgIGltZyA9IGltZ19vcl9wYXRoLnJlc2l6ZSgodywgaCksIEltYWdlLkxBTkNaT1MpCiAgICAgICAgaW1nLnNhdmUoZGVzdCwgJ1BORycsIG9wdGltaXplPVRydWUpCiAgICBlbHNlOgogICAgICAgIHdyaXRlX2ZhbGxiYWNrX3BuZyhkZXN0LCB3LCBoKQogICAga2IgPSBvcy5wYXRoLmdldHNpemUoZGVzdCkgLy8gMTAyNAogICAgcHJpbnQoZicgIFtPS10ge2Rlc3R9ICAoe2tifSBLQiknKQoKYm9vdF9zcmMgICA9IG9zLnBhdGguam9pbihSRVBPLCAnYnJhbmRpbmcnLCAnYm9vdGxvZ28ucG5nJykKc3BsYXNoX3NyYyA9IG9zLnBhdGguam9pbihSRVBPLCAnYnJhbmRpbmcnLCAnc3BsYXNoLnBuZycpCgojIC0tIHN5c2xpbnV4IGJvb3Rsb2dvICg2NDB4NDgwKSAtLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLQpib290bG9nb19kZXN0cyA9IFsKICAgIGYne0JVSUxEfS9iaW5hcnkvaXNvbGludXgvYm9vdGxvZ28nLAogICAgZid7QlVJTER9L2NvbmZpZy9ib290bG9hZGVycy9pc29saW51eC9ib290bG9nbycsCiAgICBmJ3tCVUlMRH0vY29uZmlnL2luY2x1ZGVzLmJpbmFyeS9pc29saW51eC9ib290bG9nbycsCl0KZm9yIGQgaW4gYm9vdGxvZ29fZGVzdHM6CiAgICBzYXZlX3BuZyhib290X3NyYywgZCwgNjQwLCA0ODApCgojIC0tIFBseW1vdXRoIHNwbGFzaCAoMTkyMHgxMDgwKSAtLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0Kc3BsYXNoX2Rlc3RzID0gWwogICAgZid7QlVJTER9L2NvbmZpZy9pbmNsdWRlcy5jaHJvb3QvdXNyL3NoYXJlL3BseW1vdXRoL3RoZW1lcy9hbWl0b3Mvc3BsYXNoLnBuZycsCiAgICBmJ3tCVUlMRH0vY29uZmlnL2luY2x1ZGVzLmNocm9vdC91c3Ivc2hhcmUvcGl4bWFwcy9hbWl0b3Mtc3BsYXNoLnBuZycsCl0KZm9yIGQgaW4gc3BsYXNoX2Rlc3RzOgogICAgc2F2ZV9wbmcoc3BsYXNoX3NyYywgZCwgMTkyMCwgMTA4MCkKCiMgLS0gQ29weSBvcmlnaW5hbHMgaW50byBicmFuZGluZyBkaXIgaW5zaWRlIGNocm9vdCAtLS0tLS0tLS0tLS0tLS0tLS0tLS0tLQpicmFuZGluZ19kaXIgPSBmJ3tCVUlMRH0vY29uZmlnL2luY2x1ZGVzLmNocm9vdC91c3IvbG9jYWwvYW1pdG9zL2JyYW5kaW5nJwpvcy5tYWtlZGlycyhicmFuZGluZ19kaXIsIGV4aXN0X29rPVRydWUpCnNodXRpbC5jb3B5KGJvb3Rfc3JjLCAgIG9zLnBhdGguam9pbihicmFuZGluZ19kaXIsICdib290bG9nby5wbmcnKSkKc2h1dGlsLmNvcHkoc3BsYXNoX3NyYywgb3MucGF0aC5qb2luKGJyYW5kaW5nX2RpciwgJ3NwbGFzaC5wbmcnKSkKCnByaW50KCdbT0tdIEFsbCBicmFuZGluZyBpbWFnZXMgcmVhZHkuJyk=" | base64 -d | python3
 
           # Plymouth theme descriptor
-          sudo tee "$BUILD_DIR/config/includes.chroot/usr/share/plymouth/themes/amitos/amitos.plymouth" > /dev/null << 'PLYM'
-[Plymouth Theme]
-Name=AmitOS
-Description=AmitOS Boot Splash
-ModuleName=script
-
-[script]
-ImageDir=/usr/share/plymouth/themes/amitos
-ScriptFile=/usr/share/plymouth/themes/amitos/amitos.script
-PLYM
+          echo "W1BseW1vdXRoIFRoZW1lXQpOYW1lPUFtaXRPUwpEZXNjcmlwdGlvbj1BbWl0T1MgQm9vdCBTcGxhc2gKTW9kdWxlTmFtZT1zY3JpcHQKCltzY3JpcHRdCkltYWdlRGlyPS91c3Ivc2hhcmUvcGx5bW91dGgvdGhlbWVzL2FtaXRvcwpTY3JpcHRGaWxlPS91c3Ivc2hhcmUvcGx5bW91dGgvdGhlbWVzL2FtaXRvcy9hbWl0b3Muc2NyaXB0" | base64 -d | sudo tee "$BUILD_DIR/config/includes.chroot/usr/share/plymouth/themes/amitos/amitos.plymouth" > /dev/null
 
           # Plymouth script: clean static image + native progress bar drawn on top
-          sudo tee "$BUILD_DIR/config/includes.chroot/usr/share/plymouth/themes/amitos/amitos.script" > /dev/null << 'PLYMSCRIPT'
-/* AmitOS Plymouth Theme */
-/* Static branded splash + native glowing progress bar */
-
-wallpaper_image = Image("splash.png");
-screen_w = Plymouth.GetWidth();
-screen_h = Plymouth.GetHeight();
-scaled   = wallpaper_image.Scale(screen_w, screen_h);
-bg       = Sprite(scaled);
-bg.SetZ(-100);
-
-bar_h   = 4;
-bar_y   = screen_h - 48;
-bar_maxw = Math.Int(screen_w * 0.60);
-bar_x   = Math.Int((screen_w - bar_maxw) / 2);
-
-track_img = Image.CreateAt(bar_maxw, bar_h);
-track_img.Rectangle(0, 0, bar_maxw, bar_h, 0.10, 0.10, 0.15, 0.55);
-track = Sprite(track_img);
-track.SetPosition(bar_x, bar_y, 1);
-
-fill_img = Image.CreateAt(1, bar_h);
-fill     = Sprite(fill_img);
-fill.SetPosition(bar_x, bar_y, 2);
-
-fun progress_callback(dur, pct) {
-    fw = Math.Int(bar_maxw * pct);
-    if (fw < 2) fw = 2;
-    nf = Image.CreateAt(fw, bar_h);
-    nf.Rectangle(0, 0, fw, bar_h, 0.0, 0.78, 1.0, 1.0);
-    nf.Rectangle(0, 0, fw, 1,     0.4, 0.95, 1.0, 0.7);
-    fill.SetImage(nf);
-}
-Plymouth.SetBootProgressFunction(progress_callback);
-
-fun quit_callback() {
-    bg.SetOpacity(0);
-    track.SetOpacity(0);
-    fill.SetOpacity(0);
-}
-Plymouth.SetQuitFunction(quit_callback);
-PLYMSCRIPT
+          echo "LyogQW1pdE9TIFBseW1vdXRoIFRoZW1lICovCi8qIFN0YXRpYyBicmFuZGVkIHNwbGFzaCArIG5hdGl2ZSBnbG93aW5nIHByb2dyZXNzIGJhciAqLwoKd2FsbHBhcGVyX2ltYWdlID0gSW1hZ2UoInNwbGFzaC5wbmciKTsKc2NyZWVuX3cgPSBQbHltb3V0aC5HZXRXaWR0aCgpOwpzY3JlZW5faCA9IFBseW1vdXRoLkdldEhlaWdodCgpOwpzY2FsZWQgICA9IHdhbGxwYXBlcl9pbWFnZS5TY2FsZShzY3JlZW5fdywgc2NyZWVuX2gpOwpiZyAgICAgICA9IFNwcml0ZShzY2FsZWQpOwpiZy5TZXRaKC0xMDApOwoKYmFyX2ggICA9IDQ7CmJhcl95ICAgPSBzY3JlZW5faCAtIDQ4OwpiYXJfbWF4dyA9IE1hdGguSW50KHNjcmVlbl93ICogMC42MCk7CmJhcl94ICAgPSBNYXRoLkludCgoc2NyZWVuX3cgLSBiYXJfbWF4dykgLyAyKTsKCnRyYWNrX2ltZyA9IEltYWdlLkNyZWF0ZUF0KGJhcl9tYXh3LCBiYXJfaCk7CnRyYWNrX2ltZy5SZWN0YW5nbGUoMCwgMCwgYmFyX21heHcsIGJhcl9oLCAwLjEwLCAwLjEwLCAwLjE1LCAwLjU1KTsKdHJhY2sgPSBTcHJpdGUodHJhY2tfaW1nKTsKdHJhY2suU2V0UG9zaXRpb24oYmFyX3gsIGJhcl95LCAxKTsKCmZpbGxfaW1nID0gSW1hZ2UuQ3JlYXRlQXQoMSwgYmFyX2gpOwpmaWxsICAgICA9IFNwcml0ZShmaWxsX2ltZyk7CmZpbGwuU2V0UG9zaXRpb24oYmFyX3gsIGJhcl95LCAyKTsKCmZ1biBwcm9ncmVzc19jYWxsYmFjayhkdXIsIHBjdCkgewogICAgZncgPSBNYXRoLkludChiYXJfbWF4dyAqIHBjdCk7CiAgICBpZiAoZncgPCAyKSBmdyA9IDI7CiAgICBuZiA9IEltYWdlLkNyZWF0ZUF0KGZ3LCBiYXJfaCk7CiAgICBuZi5SZWN0YW5nbGUoMCwgMCwgZncsIGJhcl9oLCAwLjAsIDAuNzgsIDEuMCwgMS4wKTsKICAgIG5mLlJlY3RhbmdsZSgwLCAwLCBmdywgMSwgICAgIDAuNCwgMC45NSwgMS4wLCAwLjcpOwogICAgZmlsbC5TZXRJbWFnZShuZik7Cn0KUGx5bW91dGguU2V0Qm9vdFByb2dyZXNzRnVuY3Rpb24ocHJvZ3Jlc3NfY2FsbGJhY2spOwoKZnVuIHF1aXRfY2FsbGJhY2soKSB7CiAgICBiZy5TZXRPcGFjaXR5KDApOwogICAgdHJhY2suU2V0T3BhY2l0eSgwKTsKICAgIGZpbGwuU2V0T3BhY2l0eSgwKTsKfQpQbHltb3V0aC5TZXRRdWl0RnVuY3Rpb24ocXVpdF9jYWxsYmFjayk7" | base64 -d | sudo tee "$BUILD_DIR/config/includes.chroot/usr/share/plymouth/themes/amitos/amitos.script" > /dev/null
 
           echo "[OK] Bootlogo and Plymouth theme created."
 
