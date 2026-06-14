@@ -210,7 +210,7 @@ class AmitStore(Gtk.Window):
         installed = pkg in self._installed
         btn = Gtk.Button(label="Remove" if installed else "Install")
         btn.get_style_context().add_class("btn-remove" if installed else "btn-install")
-        btn.connect("clicked", self._on_action, pkg, name, installed, btn)
+        btn.connect("clicked", self._on_action, pkg, name, installed)
         card.pack_start(btn, False, False, 0)
         return card
 
@@ -245,11 +245,11 @@ class AmitStore(Gtk.Window):
         self._query = entry.get_text()
         self._render_apps()
 
-    def _on_action(self, btn, pkg, name, installed, button):
+    def _on_action(self, btn, pkg, name, installed):
         if installed:
-            self._run_apt("remove", pkg, name, button)
+            self._run_apt("remove", pkg, name, btn)
         else:
-            self._run_apt("install", pkg, name, button)
+            self._run_apt("install", pkg, name, btn)
 
     def _run_apt(self, action, pkg, name, btn):
         btn.set_sensitive(False)

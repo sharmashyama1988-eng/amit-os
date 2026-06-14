@@ -62,6 +62,7 @@ make_desktop "amitsearch"  "AmitSearch"   "Global Search" "system-search" "Utili
 make_desktop "amitvault"   "AmitVault"    "File Locker" "system-lock-screen" "Utility;System"
 make_desktop "amitcleaner" "AmitCleaner"  "System Junk Cleaner" "user-trash" "System"
 make_desktop "amitshield-ui" "AmitShield" "Security Dashboard" "security-high" "System;Security"
+make_desktop "amittray" "AmitTray" "System Tray Utilities" "preferences-desktop-notification" "Utility"
 
 # ── Autostarts ──────────────────────────────────────────────
 mkdir -p /etc/skel/.config/autostart

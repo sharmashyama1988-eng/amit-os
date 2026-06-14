@@ -59,10 +59,10 @@ class _CtypesBackend:
         lib.amitshield_is_running.argtypes     = [ctypes.c_void_p]
         lib.amitshield_is_running.restype      = ctypes.c_int
         lib.amitshield_get_status.argtypes     = [ctypes.c_void_p]
-        lib.amitshield_get_status.restype      = ctypes.c_char_p
+        lib.amitshield_get_status.restype      = ctypes.c_void_p
         lib.amitshield_get_threats.argtypes    = [ctypes.c_void_p, ctypes.c_int]
-        lib.amitshield_get_threats.restype     = ctypes.c_char_p
-        lib.amitshield_free_str.argtypes       = [ctypes.c_char_p]
+        lib.amitshield_get_threats.restype     = ctypes.c_void_p
+        lib.amitshield_free_str.argtypes       = [ctypes.c_void_p]
         lib.amitshield_block_ip.argtypes       = [ctypes.c_void_p, ctypes.c_char_p]
         lib.amitshield_block_ip.restype        = ctypes.c_int
         lib.amitshield_firewall_enable.argtypes  = [ctypes.c_void_p]
@@ -80,12 +80,24 @@ class _CtypesBackend:
         return bool(self._lib.amitshield_is_running(self._engine))
 
     def get_status(self) -> Dict:
-        raw = self._lib.amitshield_get_status(self._engine)
-        return json.loads(raw.decode()) if raw else {}
+        ptr = self._lib.amitshield_get_status(self._engine)
+        if not ptr:
+            return {}
+        try:
+            raw = ctypes.string_at(ptr)
+            return json.loads(raw.decode()) if raw else {}
+        finally:
+            self._lib.amitshield_free_str(ptr)
 
     def get_threats(self, count: int = 50) -> List[Dict]:
-        raw = self._lib.amitshield_get_threats(self._engine, count)
-        return json.loads(raw.decode()) if raw else []
+        ptr = self._lib.amitshield_get_threats(self._engine, count)
+        if not ptr:
+            return []
+        try:
+            raw = ctypes.string_at(ptr)
+            return json.loads(raw.decode()) if raw else []
+        finally:
+            self._lib.amitshield_free_str(ptr)
 
     def block_ip(self, ip: str) -> bool:
         return bool(self._lib.amitshield_block_ip(self._engine, ip.encode()))
@@ -179,7 +191,7 @@ class _PythonFallback:
     """Full Python implementation — used when C++ lib missing."""
 
     def __init__(self):
-        import re, pwd
+        import re
         self._running    = False
         self._threats    = []
         self._blocked    = 0
@@ -187,6 +199,7 @@ class _PythonFallback:
         self._start_time = time.time()
         self._thread     = None
         self._re         = re
+        self._blocked_pids = set()
         self._suspicious = [
             r"xmrig", r"minerd", r"cpuminer",
             r"nc -e", r"/dev/tcp/",
@@ -211,13 +224,17 @@ class _PythonFallback:
         while self._running:
             try:
                 self._scans += 1
+                active_pids = set()
                 for pid_path in glob.glob("/proc/[0-9]*/cmdline"):
                     try:
+                        pid = int(pid_path.split("/")[2])
+                        active_pids.add(pid)
+                        if pid in self._blocked_pids:
+                            continue
                         with open(pid_path, "r", errors="replace") as f:
                             cmd = f.read().replace("\x00", " ")
                         for pat in self._suspicious:
                             if self._re.search(pat, cmd, self._re.IGNORECASE):
-                                pid = int(pid_path.split("/")[2])
                                 self._threats.append({
                                     "type": "process",
                                     "description": f"Suspicious: PID {pid}",
@@ -227,6 +244,12 @@ class _PythonFallback:
                                 os.kill(pid, 19)  # SIGSTOP
                                 self._threats[-1]["blocked"] = True
                                 self._blocked += 1
+                                self._blocked_pids.add(pid)
+                                break
+                    except Exception:
+                        pass
+                # Clean up stale PIDs from self._blocked_pids
+                self._blocked_pids = self._blocked_pids.intersection(active_pids)
             except Exception:
                 pass
             time.sleep(30)
@@ -250,13 +273,25 @@ class _PythonFallback:
         return self._threats[-count:]
 
     def block_ip(self, ip: str) -> bool:
-        return os.system(f"ufw deny from {ip} to any") == 0
+        try:
+            res = subprocess.run(["ufw", "deny", "from", ip, "to", "any"], capture_output=True, timeout=10)
+            return res.returncode == 0
+        except Exception:
+            return False
 
     def firewall_enable(self)  -> bool:
-        return os.system("ufw --force enable")  == 0
+        try:
+            res = subprocess.run(["ufw", "--force", "enable"], capture_output=True, timeout=10)
+            return res.returncode == 0
+        except Exception:
+            return False
 
     def firewall_disable(self) -> bool:
-        return os.system("ufw disable") == 0
+        try:
+            res = subprocess.run(["ufw", "disable"], capture_output=True, timeout=10)
+            return res.returncode == 0
+        except Exception:
+            return False
 
 
 # ════════════════════════════════════════════════════════════

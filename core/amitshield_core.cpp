@@ -452,9 +452,9 @@ void Engine::ipc_loop() {
     struct sockaddr_un addr{};
     addr.sun_family = AF_UNIX;
     strncpy(addr.sun_path, SOCKET_PATH, sizeof(addr.sun_path)-1);
-    ::chmod(SOCKET_PATH, 0666);
 
     if (::bind(srv, (struct sockaddr*)&addr, sizeof(addr)) < 0) { ::close(srv); return; }
+    ::chmod(SOCKET_PATH, 0666);
     ::listen(srv, 5);
 
     while (ipc_running_.load()) {

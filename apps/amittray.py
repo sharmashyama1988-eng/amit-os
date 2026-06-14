@@ -6,11 +6,11 @@ Amit OS v1.0
 """
 import gi
 gi.require_version("Gtk", "3.0")
-gi.require_version("AppIndicator3", "0.1")
 from gi.repository import Gtk, Gdk, GLib
 import subprocess, os, re, threading, time
 
 try:
+    gi.require_version("AppIndicator3", "0.1")
     from gi.repository import AppIndicator3
     HAS_INDICATOR = True
 except Exception:
@@ -325,25 +325,37 @@ class AmitTray:
         parent.pack_start(lbl, False, False, 0)
 
     def _toggle_wifi(self, btn):
-        out = run(["nmcli", "radio", "wifi"])
-        if "enabled" in out:
-            subprocess.Popen(["nmcli", "radio", "wifi", "off"])
-        else:
-            subprocess.Popen(["nmcli", "radio", "wifi", "on"])
+        try:
+            out = run(["nmcli", "radio", "wifi"])
+            if "enabled" in out:
+                subprocess.Popen(["nmcli", "radio", "wifi", "off"])
+            else:
+                subprocess.Popen(["nmcli", "radio", "wifi", "on"])
+        except Exception:
+            pass
 
     def _toggle_bt(self, btn):
-        out = run(["bluetoothctl", "show"])
-        if "Powered: yes" in out:
-            subprocess.Popen(["bluetoothctl", "power", "off"])
-        else:
-            subprocess.Popen(["bluetoothctl", "power", "on"])
+        try:
+            out = run(["bluetoothctl", "show"])
+            if "Powered: yes" in out:
+                subprocess.Popen(["bluetoothctl", "power", "off"])
+            else:
+                subprocess.Popen(["bluetoothctl", "power", "on"])
+        except Exception:
+            pass
 
     def _set_volume(self, slider):
-        vol = int(slider.get_value())
-        subprocess.Popen(["pactl", "set-sink-volume", "@DEFAULT_SINK@", f"{vol}%"])
+        try:
+            vol = int(slider.get_value())
+            subprocess.Popen(["pactl", "set-sink-volume", "@DEFAULT_SINK@", f"{vol}%"])
+        except Exception:
+            pass
 
     def _open(self, cmd):
-        subprocess.Popen(cmd.split())
+        try:
+            subprocess.Popen(cmd.split())
+        except Exception:
+            pass
 
 
 def main():

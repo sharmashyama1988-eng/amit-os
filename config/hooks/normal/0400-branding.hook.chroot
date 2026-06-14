@@ -35,16 +35,21 @@ EOF
 
 # Animation Duration (0.5 = Ultra Fast/120FPS Feel)
 cat > "$SKEL/kdeglobals" << 'EOF'
-[KDE]
-AnimationDurationFactor=0.5
-LookAndFeelPackage=org.kde.breeze.desktop
-
 [General]
+ColorScheme=BreezeDark
 font=Inter,10,-1,5,50,0,0,0,0,0
 fixed=Hack,10,-1,5,50,0,0,0,0,0
 smallestReadableFont=Inter,8,-1,5,50,0,0,0,0,0
 toolBarFont=Inter,10,-1,5,50,0,0,0,0,0
 menuFont=Inter,10,-1,5,50,0,0,0,0,0
+
+[Icons]
+Theme=breeze-dark
+
+[KDE]
+LookAndFeelPackage=org.kde.breezedark.desktop
+SingleClick=false
+AnimationDurationFactor=0.5
 EOF
 
 # ── 3. C++ AmitShield Core Compilation ──────────────────────
@@ -73,6 +78,7 @@ Session=plasma
 EOF
 
 # Link wallpaper for system default
+mkdir -p /usr/share/wallpapers/Next/contents/images/
 ln -sf "$BRANDING_DIR/wallpaper.png" /usr/share/wallpapers/Next/contents/images/1920x1080.png
 
 # ── 5. Shortcuts (Windows Style) ──────────────────────────────

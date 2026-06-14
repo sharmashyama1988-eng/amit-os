@@ -135,17 +135,6 @@ User=amit
 Session=plasma
 EOF
 
-# KDE dark theme defaults
-mkdir -p /etc/skel/.config
-cat > /etc/skel/.config/kdeglobals << 'EOF'
-[General]
-ColorScheme=BreezeDark
-[Icons]
-Theme=breeze-dark
-[KDE]
-LookAndFeelPackage=org.kde.breezedark.desktop
-SingleClick=false
-EOF
 
 # ── 7. File System Management ───────────────────────────────
 echo "[Core] Optimizing File System Performance..."

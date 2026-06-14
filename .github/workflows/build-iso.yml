@@ -31,7 +31,7 @@ jobs:
             live-build live-config live-boot \
             debootstrap squashfs-tools xorriso \
             grub-efi-amd64-bin grub-pc-bin mtools \
-            syslinux isolinux syslinux-common syslinux-utils \
+            syslinux isolinux syslinux-common syslinux-utils cpio \
             wget curl git python3 python3-pip dos2unix
 
       - name: Install Python Imaging Library
@@ -200,13 +200,92 @@ jobs:
           BUILD_DIR="/tmp/amitos-build"
           REPO="${GITHUB_WORKSPACE}"
 
-          sudo mkdir -p "$BUILD_DIR/binary/isolinux"
           sudo mkdir -p "$BUILD_DIR/config/bootloaders/isolinux"
           sudo mkdir -p "$BUILD_DIR/config/includes.binary/isolinux"
+          sudo mkdir -p "$BUILD_DIR/config/binary_local-includes/isolinux"
           sudo mkdir -p "$BUILD_DIR/config/includes.chroot/usr/share/plymouth/themes/amitos"
           sudo mkdir -p "$BUILD_DIR/config/includes.chroot/usr/share/pixmaps"
 
-          echo "aW1wb3J0IG9zLCBzaHV0aWwsIHN5cwp0cnk6CiAgICBmcm9tIFBJTCBpbXBvcnQgSW1hZ2UKICAgIEhBU19QSUwgPSBUcnVlCmV4Y2VwdCBJbXBvcnRFcnJvcjoKICAgIEhBU19QSUwgPSBGYWxzZQogICAgaW1wb3J0IHN0cnVjdCwgemxpYgoKUkVQTyAgPSBvcy5lbnZpcm9uWydHSVRIVUJfV09SS1NQQUNFJ10KQlVJTEQgPSAnL3RtcC9hbWl0b3MtYnVpbGQnCgpkZWYgd3JpdGVfZmFsbGJhY2tfcG5nKHBhdGgsIHc9NjQwLCBoPTQ4MCk6CiAgICAiIiJXcml0ZSBtaW5pbWFsIGRhcmstbmF2eSBQTkcgd2l0aG91dCBQaWxsb3cuIiIiCiAgICBpbXBvcnQgc3RydWN0LCB6bGliCiAgICByb3cgPSBieXRlcyhbMF0pICsgYnl0ZXMoWzEwLCAxNCwgMzhdICogdykKICAgIHJhdyA9IHJvdyAqIGgKICAgIGNvbXAgPSB6bGliLmNvbXByZXNzKHJhdywgMSkKICAgIGRlZiBjayhuLCBkKToKICAgICAgICBjID0gbiArIGQKICAgICAgICByZXR1cm4gc3RydWN0LnBhY2soJz5JJywgbGVuKGQpKSArIGMgKyBzdHJ1Y3QucGFjaygnPkknLCB6bGliLmNyYzMyKGMpICYgMHhmZmZmZmZmZikKICAgIHBuZyA9IGInXHg4OVBOR1xyXG5ceDFhXG4nCiAgICBwbmcgKz0gY2soYidJSERSJywgc3RydWN0LnBhY2soJz5JSUJCQkJCJywgdywgaCwgOCwgMiwgMCwgMCwgMCkpCiAgICBwbmcgKz0gY2soYidJREFUJywgY29tcCkKICAgIHBuZyArPSBjayhiJ0lFTkQnLCBiJycpCiAgICBvcy5tYWtlZGlycyhvcy5wYXRoLmRpcm5hbWUocGF0aCkgb3IgJy4nLCBleGlzdF9vaz1UcnVlKQogICAgd2l0aCBvcGVuKHBhdGgsICd3YicpIGFzIGY6CiAgICAgICAgZi53cml0ZShwbmcpCiAgICBwcmludChmJyAgW09LXSBmYWxsYmFjayBQTkcgLT4ge3BhdGh9JykKCmRlZiBzYXZlX3BuZyhpbWdfb3JfcGF0aCwgZGVzdCwgdywgaCk6CiAgICBvcy5tYWtlZGlycyhvcy5wYXRoLmRpcm5hbWUoZGVzdCkgb3IgJy4nLCBleGlzdF9vaz1UcnVlKQogICAgaWYgSEFTX1BJTDoKICAgICAgICBpZiBpc2luc3RhbmNlKGltZ19vcl9wYXRoLCBzdHIpOgogICAgICAgICAgICBpbWcgPSBJbWFnZS5vcGVuKGltZ19vcl9wYXRoKS5jb252ZXJ0KCdSR0InKS5yZXNpemUoKHcsIGgpLCBJbWFnZS5MQU5DWk9TKQogICAgICAgIGVsc2U6CiAgICAgICAgICAgIGltZyA9IGltZ19vcl9wYXRoLnJlc2l6ZSgodywgaCksIEltYWdlLkxBTkNaT1MpCiAgICAgICAgaW1nLnNhdmUoZGVzdCwgJ1BORycsIG9wdGltaXplPVRydWUpCiAgICBlbHNlOgogICAgICAgIHdyaXRlX2ZhbGxiYWNrX3BuZyhkZXN0LCB3LCBoKQogICAga2IgPSBvcy5wYXRoLmdldHNpemUoZGVzdCkgLy8gMTAyNAogICAgcHJpbnQoZicgIFtPS10ge2Rlc3R9ICAoe2tifSBLQiknKQoKYm9vdF9zcmMgICA9IG9zLnBhdGguam9pbihSRVBPLCAnYnJhbmRpbmcnLCAnYm9vdGxvZ28ucG5nJykKc3BsYXNoX3NyYyA9IG9zLnBhdGguam9pbihSRVBPLCAnYnJhbmRpbmcnLCAnc3BsYXNoLnBuZycpCgojIC0tIHN5c2xpbnV4IGJvb3Rsb2dvICg2NDB4NDgwKSAtLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLQpzcGxhc2hfZGVzdHMgPSBbCiAgICBmJ3tCVUlMRH0vYmluYXJ5L2lzb2xpbnV4L3NwbGFzaC5wbmcnLAogICAgZid7QlVJTER9L2NvbmZpZy9ib290bG9hZGVycy9pc29saW51eC9zcGxhc2gucG5nJywKICAgIGYne0JVSUxEfS9jb25maWcvaW5jbHVkZXMuYmluYXJ5L2lzb2xpbnV4L3NwbGFzaC5wbmcnLApdCmZvciBkIGluIHNwbGFzaF9kZXN0czoKICAgIHNhdmVfcG5nKGJvb3Rfc3JjLCBkLCA2NDAsIDQ4MCkKCiMgQ3JlYXRlIGEgZHVtbXkgZW1wdHkgY3BpbyBhcmNoaXZlIGZvciAnYm9vdGxvZ28nIHRvIHByZXZlbnQgbGl2ZS1idWlsZCBjcmFzaAppbXBvcnQgc3VicHJvY2VzcwpzdWJwcm9jZXNzLnJ1bigibWtkaXIgLXAgIiArIGYne0JVSUxEfS9jb25maWcvYm9vdGxvYWRlcnMvaXNvbGludXgnLCBzaGVsbD1UcnVlKQpzdWJwcm9jZXNzLnJ1bigiZWNobyAtbiAnJyB8IGNwaW8gLUggbmV3YyAtbyA+ICIgKyBmJ3tCVUlMRH0vY29uZmlnL2Jvb3Rsb2FkZXJzL2lzb2xpbnV4L2Jvb3Rsb2dvJyArICIgMj4vZGV2L251bGwiLCBzaGVsbD1UcnVlKQoKIyAtLSBQbHltb3V0aCBzcGxhc2ggKDE5MjB4MTA4MCkgLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0Kc3BsYXNoX2Rlc3RzX3BseW1vdXRoID0gWwogICAgZid7QlVJTER9L2NvbmZpZy9pbmNsdWRlcy5jaHJvb3QvdXNyL3NoYXJlL3BseW1vdXRoL3RoZW1lcy9hbWl0b3Mvc3BsYXNoLnBuZycsCiAgICBmJ3tCVUlMRH0vY29uZmlnL2luY2x1ZGVzLmNocm9vdC91c3Ivc2hhcmUvcGl4bWFwcy9hbWl0b3Mtc3BsYXNoLnBuZycsCl0KZm9yIGQgaW4gc3BsYXNoX2Rlc3RzX3BseW1vdXRoOgogICAgc2F2ZV9wbmcoc3BsYXNoX3NyYywgZCwgMTkyMCwgMTA4MCkKCiMgLS0gQ29weSBvcmlnaW5hbHMgaW50byBicmFuZGluZyBkaXIgaW5zaWRlIGNocm9vdCAtLS0tLS0tLS0tLS0tLS0tLS0tLS0tLQpicmFuZGluZ19kaXIgPSBmJ3tCVUlMRH0vY29uZmlnL2luY2x1ZGVzLmNocm9vdC91c3IvbG9jYWwvYW1pdG9zL2JyYW5kaW5nJwpvcy5tYWtlZGlycyhicmFuZGluZ19kaXIsIGV4aXN0X29rPVRydWUpCnNodXRpbC5jb3B5KGJvb3Rfc3JjLCAgIG9zLnBhdGguam9pbihicmFuZGluZ19kaXIsICdib290bG9nby5wbmcnKSkKc2h1dGlsLmNvcHkoc3BsYXNoX3NyYywgb3MucGF0aC5qb2luKGJyYW5kaW5nX2RpciwgJ3NwbGFzaC5wbmcnKSkKCnByaW50KCdbT0tdIEFsbCBicmFuZGluZyBpbWFnZXMgcmVhZHkuJyk=" | base64 -di | sudo -E python3
+          sudo -E python3 << 'EOF'
+import os, shutil, sys
+try:
+    from PIL import Image
+    HAS_PIL = True
+except ImportError:
+    HAS_PIL = False
+    import struct, zlib
+
+REPO  = os.environ['GITHUB_WORKSPACE']
+BUILD = '/tmp/amitos-build'
+
+def write_fallback_png(path, w=640, h=480):
+    import struct, zlib
+    row = bytes([0]) + bytes([10, 14, 38] * w)
+    raw = row * h
+    comp = zlib.compress(raw, 1)
+    def ck(n, d):
+        c = n + d
+        return struct.pack('>I', len(d)) + c + struct.pack('>I', zlib.crc32(c) & 0xffffffff)
+    png = b'\x89PNG\r\n\x1a\n'
+    png += ck(b'IHDR', struct.pack('>IIBBBBB', w, h, 8, 2, 0, 0, 0))
+    png += ck(b'IDAT', comp)
+    png += ck(b'IEND', b'')
+    os.makedirs(os.path.dirname(path) or '.', exist_ok=True)
+    with open(path, 'wb') as f:
+        f.write(png)
+    print(f'  [OK] fallback PNG -> {path}')
+
+def save_png(img_or_path, dest, w, h):
+    os.makedirs(os.path.dirname(dest) or '.', exist_ok=True)
+    if HAS_PIL:
+        if isinstance(img_or_path, str):
+            img = Image.open(img_or_path).convert('RGB').resize((w, h), Image.Resampling.LANCZOS)
+        else:
+            img = img_or_path.resize((w, h), Image.Resampling.LANCZOS)
+        img.save(dest, 'PNG', optimize=True)
+    else:
+        write_fallback_png(dest, w, h)
+    kb = os.path.getsize(dest) // 1024
+    print(f'  [OK] {dest}  ({kb} KB)')
+
+boot_src   = os.path.join(REPO, 'branding', 'bootlogo.png')
+splash_src = os.path.join(REPO, 'branding', 'splash.png')
+
+# syslinux splash (640x480)
+splash_dests = [
+    f'{BUILD}/config/bootloaders/isolinux/splash.png',
+    f'{BUILD}/config/includes.binary/isolinux/splash.png',
+    f'{BUILD}/config/binary_local-includes/isolinux/splash.png',
+]
+for d in splash_dests:
+    save_png(boot_src, d, 640, 480)
+
+# Create dummy empty cpio bootlogo in all bootloader directories
+import subprocess
+for d in [
+    f'{BUILD}/config/bootloaders/isolinux',
+    f'{BUILD}/config/includes.binary/isolinux',
+    f'{BUILD}/config/binary_local-includes/isolinux',
+]:
+    os.makedirs(d, exist_ok=True)
+    subprocess.run('echo -n \"\" | cpio -H newc -o > ' + os.path.join(d, 'bootlogo') + ' 2>/dev/null', shell=True)
+
+# Plymouth splash (1920x1080)
+splash_dests_plymouth = [
+    f'{BUILD}/config/includes.chroot/usr/share/plymouth/themes/amitos/splash.png',
+    f'{BUILD}/config/includes.chroot/usr/share/pixmaps/amitos-splash.png',
+]
+for d in splash_dests_plymouth:
+    save_png(splash_src, d, 1920, 1080)
+
+# Copy originals into branding dir inside chroot
+branding_dir = f'{BUILD}/config/includes.chroot/usr/local/amitos/branding'
+os.makedirs(branding_dir, exist_ok=True)
+shutil.copy(boot_src,   os.path.join(branding_dir, 'bootlogo.png'))
+shutil.copy(splash_src, os.path.join(branding_dir, 'splash.png'))
+
+print('[OK] All branding images ready.')
+EOF
 
 
           # Plymouth theme descriptor
@@ -227,17 +306,6 @@ jobs:
           for f in config/hooks/normal/*.hook.chroot; do
             sudo sed -i 's/^[[:space:]]\{10\}//' "$f" 2>/dev/null || true
           done
-
-          # Ensure bootlogo (dummy cpio) is present for syslinux so it doesn't fail on line 364
-          sudo mkdir -p binary/isolinux
-          if [ ! -f binary/isolinux/bootlogo ]; then
-            sudo cp config/bootloaders/isolinux/bootlogo binary/isolinux/bootlogo 2>/dev/null || true
-          fi
-          
-          # Also ensure splash.png is in binary/isolinux
-          if [ ! -f binary/isolinux/splash.png ]; then
-            sudo cp config/bootloaders/isolinux/splash.png binary/isolinux/splash.png 2>/dev/null || true
-          fi
 
           echo "=== Starting lb build ==="
           sudo lb build 2>&1 | tee /tmp/lb-build.log

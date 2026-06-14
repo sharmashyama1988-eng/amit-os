@@ -118,10 +118,16 @@ class AmitCapture(Gtk.Window):
         
         # Use gnome-screenshot or import (ImageMagick) or spectacle
         # Amit OS uses Spectacle by default, but for custom snip we use 'import'
-        subprocess.Popen(["import", "-window", "root", "-crop", f"{w}x{h}+{x}+{y}", path])
+        try:
+            subprocess.Popen(["import", "-window", "root", "-crop", f"{w}x{h}+{x}+{y}", path])
+        except Exception:
+            pass
         
         # Show notification
-        subprocess.Popen(["notify-send", "AmitCapture", f"Screenshot saved to Pictures/{filename}"])
+        try:
+            subprocess.Popen(["notify-send", "AmitCapture", f"Screenshot saved to Pictures/{filename}"])
+        except Exception:
+            pass
         self.toolbar.show()
 
 def main():

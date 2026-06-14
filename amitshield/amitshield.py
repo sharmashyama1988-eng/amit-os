@@ -21,10 +21,7 @@ import shutil
 import re
 from datetime import datetime
 from pathlib import Path
-import dbus
-import dbus.service
-import dbus.mainloop.glib
-from gi.repository import GLib
+# Unused dbus/GLib imports removed for compatibility
 
 # ─── Configuration ───────────────────────────────────────────
 VERSION       = "1.0.0"
@@ -55,7 +52,7 @@ DEFAULT_CONFIG = {
 # ─── Known Malicious Patterns ────────────────────────────────
 SUSPICIOUS_PATTERNS = [
     r"cryptominer", r"xmrig", r"minerd", r"cpuminer",
-    r"torjan", r"rootkit", r"keylogger", r"ransomware",
+    r"trojan", r"rootkit", r"keylogger", r"ransomware",
     r"netcat\s+-e", r"bash\s+-i\s+>&", r"python\s+-c.*socket",
     r"perl\s+-e.*socket", r"/dev/tcp/", r"wget.*\|.*bash",
     r"curl.*\|.*bash", r"chmod.*777.*tmp"
@@ -94,6 +91,7 @@ class AmitShieldEngine:
         self.scans_completed = 0
         self.start_time = datetime.now()
         self.known_pids = set()
+        self.known_connections = set()
         self.whitelist = set()
         self.alert_callbacks = []
         log.info(f"═══ AmitShield v{VERSION} Starting ═══")
@@ -205,7 +203,7 @@ class AmitShieldEngine:
     def _quarantine_process(self, pid, cmd):
         try:
             log.warning(f"Quarantining malicious process PID:{pid}")
-            subprocess.run(["kill", "-STOP", pid], capture_output=True, timeout=5)
+            subprocess.run(["kill", "-STOP", pid], capture_output=True, timeout=5, check=True)
             self.threats_blocked += 1
             log.warning(f"✓ Process PID:{pid} suspended")
         except Exception as e:
@@ -220,13 +218,20 @@ class AmitShieldEngine:
                 ["ss", "-tnp"],
                 capture_output=True, text=True, timeout=10
             )
+            current_connections = set()
             for line in result.stdout.split("\n"):
+                line = line.strip()
+                if not line:
+                    continue
                 for port in DANGEROUS_PORTS:
                     if f":{port}" in line and "ESTABLISHED" in line:
-                        self.threats_detected += 1
-                        msg = f"Suspicious connection on dangerous port {port}: {line.strip()}"
-                        log.warning(f"🌐 {msg}")
-                        self._send_alert("network", msg)
+                        current_connections.add(line)
+                        if line not in self.known_connections:
+                            self.threats_detected += 1
+                            msg = f"Suspicious connection on dangerous port {port}: {line}"
+                            log.warning(f"🌐 {msg}")
+                            self._send_alert("network", msg)
+            self.known_connections = current_connections
         except Exception as e:
             log.debug(f"Network scan error: {e}")
 
@@ -248,13 +253,22 @@ class AmitShieldEngine:
                         ["du", "-sm", path],
                         capture_output=True, text=True, timeout=10
                     )
-                    size_mb = int(result.stdout.split()[0]) if result.stdout else 0
+                    try:
+                        size_mb = int(result.stdout.split()[0]) if (result.stdout and result.stdout.split()) else 0
+                    except (ValueError, IndexError):
+                        size_mb = 0
+                    
                     if path == "/var/cache/apt/archives":
                         subprocess.run(["apt-get", "autoclean", "-y"],
                                        capture_output=True, timeout=30)
-                    elif path == "/tmp" or path == "/var/tmp":
+                    elif path in ["/tmp", "/var/tmp"]:
                         subprocess.run(
                             ["find", path, "-type", "f", "-atime", "+7", "-delete"],
+                            capture_output=True, timeout=30
+                        )
+                    elif "thumbnails" in path:
+                        subprocess.run(
+                            ["find", path, "-type", "f", "-delete"],
                             capture_output=True, timeout=30
                         )
                     cleaned_mb += size_mb
@@ -300,11 +314,11 @@ class AmitShieldEngine:
         try:
             subprocess.run(
                 ["unattended-upgrade", "--minimal_upgrade_steps"],
-                capture_output=True, timeout=300
+                capture_output=True, timeout=300, check=True
             )
             log.info("✓ Security updates applied")
         except Exception as e:
-            log.debug(f"Update check: {e}")
+            log.debug(f"Update check failed: {e}")
 
     # ── Main Scan Loop ───────────────────────────────────────
     def run_scan_cycle(self):
@@ -313,17 +327,39 @@ class AmitShieldEngine:
         self.scan_processes()
         self.scan_network()
         log.info(f"Scan #{self.scans_completed} complete — Threats: {self.threats_detected}")
+        # Write status file for UI
+        try:
+            status_file = "/tmp/amitshield_status.json"
+            with open(status_file, "w") as f:
+                json.dump(self.get_security_status(), f, indent=4)
+        except Exception as e:
+            log.debug(f"Failed to write status file: {e}")
 
     # ── Signal Handler ───────────────────────────────────────
     def stop(self, signum=None, frame=None):
         log.info("AmitShield shutting down gracefully...")
         self.running = False
+        try:
+            if os.path.exists(PID_FILE):
+                os.remove(PID_FILE)
+        except Exception:
+            pass
         sys.exit(0)
+
+    def reload_config(self, signum=None, frame=None):
+        log.info("Reloading configuration...")
+        try:
+            self.config = self._load_config()
+            self.setup_firewall()
+            log.info("✓ Configuration reloaded successfully")
+        except Exception as e:
+            log.error(f"Failed to reload configuration: {e}")
 
     # ── Main ─────────────────────────────────────────────────
     def start(self):
         signal.signal(signal.SIGTERM, self.stop)
         signal.signal(signal.SIGINT,  self.stop)
+        signal.signal(signal.SIGHUP,  self.reload_config)
 
         # Write PID
         with open(PID_FILE, "w") as f:

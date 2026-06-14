@@ -56,7 +56,7 @@ apt-get install -y --fix-missing --no-install-recommends \
     debootstrap squashfs-tools xorriso \
     grub-efi-amd64-bin grub-pc-bin mtools \
     syslinux isolinux syslinux-common \
-    wget curl git python3
+    wget curl git python3 cpio python3-pil
 ok "Dependencies installed"
 
 # ── Step 2: Prepare Fast Build Environment ───────────────────
@@ -130,6 +130,7 @@ lb config --mode debian \
     --distribution bookworm \
     --architecture amd64 \
     --initsystem systemd \
+    --archive-areas "main contrib non-free non-free-firmware" \
     --mirror-bootstrap "http://deb.debian.org/debian" \
     --mirror-binary "http://deb.debian.org/debian" \
     --linux-packages "linux-image" \
@@ -157,8 +158,9 @@ echo "Running Super-Fix to repair any broken package states..."
 dpkg --configure -a || true
 apt-get install -f -y || true
 # Ensure /dev/null is correct
-[ -e /dev/null ] && rm -f /dev/null
-mknod -m 666 /dev/null c 1 3
+if [ ! -e /dev/null ]; then
+    mknod -m 666 /dev/null c 1 3 || true
+fi
 EOF
 chmod +x config/hooks/normal/9999-super-fix.hook.chroot
 
@@ -563,6 +565,44 @@ fi
 if [ ! -f config/includes.binary/isolinux/isolinux.bin ] && [ ! -f config/bootloaders/isolinux/isolinux.bin ] && [ ! -f config/binary_local-includes/isolinux/isolinux.bin ]; then
     fail "Critical boot files missing! Cannot build ISO."
 fi
+
+# Copy dummy.cpio as bootlogo to the isolinux configuration directories
+if [ -f "$WSL_HOST/dummy.cpio" ]; then
+    cp "$WSL_HOST/dummy.cpio" config/bootloaders/isolinux/bootlogo
+    cp "$WSL_HOST/dummy.cpio" config/includes.binary/isolinux/bootlogo
+    cp "$WSL_HOST/dummy.cpio" config/binary_local-includes/isolinux/bootlogo
+    echo "  [OK] Copied dummy.cpio as bootlogo to config targets"
+else
+    warn "  [MISSING] dummy.cpio on host at $WSL_HOST/dummy.cpio"
+fi
+
+# Ensure bootlogo is also in binary/isolinux before build
+mkdir -p binary/isolinux
+if [ -f config/bootloaders/isolinux/bootlogo ] && [ ! -f binary/isolinux/bootlogo ]; then
+    cp config/bootloaders/isolinux/bootlogo binary/isolinux/bootlogo
+    echo "  [OK] Placed bootlogo in binary/isolinux"
+fi
+
+# Generate splash.png from branding/bootlogo.png (or fallback to branding/splash.png)
+python3 -c "
+import os
+from PIL import Image
+src = '/mnt/d/Amit os/branding/bootlogo.png'
+if not os.path.exists(src):
+    src = '/mnt/d/Amit os/branding/splash.png'
+if os.path.exists(src):
+    try:
+        img = Image.open(src).convert('RGB')
+        img = img.resize((640, 480), Image.Resampling.LANCZOS)
+        img.save('config/bootloaders/isolinux/splash.png')
+        img.save('config/includes.binary/isolinux/splash.png')
+        img.save('config/binary_local-includes/isolinux/splash.png')
+        print('  [OK] Created splash.png in config directories')
+    except Exception as e:
+        print('  [WARN] Failed to resize splash:', e)
+else:
+    print('  [WARN] Splash source image not found')
+" || true
 
 lb build 2>&1 | tee -a "$LOG"
 

@@ -86,7 +86,10 @@ class AmitVault(Gtk.Window):
         self.vbox.pack_start(lbl, False, False, 0)
 
         # Open vault directory in File Manager
-        subprocess.Popen(["dolphin", VAULT_DIR])
+        try:
+            subprocess.Popen(["dolphin", VAULT_DIR])
+        except Exception:
+            pass
         
         btn = Gtk.Button(label="Lock Vault Now")
         btn.get_style_context().add_class("btn-unlock")

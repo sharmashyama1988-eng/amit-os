@@ -199,7 +199,15 @@ class AmitCalc(Gtk.Window):
             safe = self.expr.replace("^","**")
             r = eval(safe, {"__builtins__":{},"math":math})
             self.expr_lbl.set_text(self.expr + " =")
-            self.result = str(round(r, 10)).rstrip('0').rstrip('.')
+            if isinstance(r, (int, float)):
+                if isinstance(r, float):
+                    self.result = f"{r:.10f}".rstrip('0').rstrip('.')
+                    if self.result == "":
+                        self.result = "0"
+                else:
+                    self.result = str(r)
+            else:
+                self.result = str(r)
             self.expr    = self.result
             self.new_num = True
         except Exception:

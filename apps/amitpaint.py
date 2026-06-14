@@ -5,7 +5,8 @@ Amit OS v1.0
 """
 import gi
 gi.require_version("Gtk", "3.0")
-from gi.repository import Gtk, Gdk, Cairo
+from gi.repository import Gtk, Gdk
+import cairo as Cairo
 import math
 
 CSS = b"""
@@ -59,7 +60,8 @@ class AmitPaint(Gtk.Window):
         for c in colors:
             btn = Gtk.Button()
             btn.get_style_context().add_class("color-btn")
-            rgba = Gdk.RGBA(*c, 1)
+            rgba = Gdk.RGBA()
+            rgba.red, rgba.green, rgba.blue, rgba.alpha = c[0], c[1], c[2], 1.0
             btn.override_background_color(Gtk.StateFlags.NORMAL, rgba)
             btn.connect("clicked", self._set_color, c)
             tb.pack_start(btn, False, False, 0)

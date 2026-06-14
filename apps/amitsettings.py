@@ -153,7 +153,12 @@ class AmitSettings(Gtk.Window):
         btn = Gtk.Button(label="Open")
         btn.get_style_context().add_class("action-btn")
         btn.set_valign(Gtk.Align.CENTER)
-        btn.connect("clicked", lambda _: subprocess.Popen(cmd.split()))
+        def run_cmd(*_):
+            try:
+                subprocess.Popen(cmd.split())
+            except Exception:
+                pass
+        btn.connect("clicked", run_cmd)
         
         card.pack_start(info, True, True, 0)
         card.pack_start(btn, False, False, 0)

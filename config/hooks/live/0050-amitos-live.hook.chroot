@@ -1,27 +1,47 @@
 #!/bin/bash
 # ============================================================
-#  AMIT OS — Live System Boot Hook
-#  Runs at live session startup (before desktop loads)
+#  AMIT OS — Live System Boot Setup Hook
+#  Configures the autostart script for the live user session
 # ============================================================
 
-# ─── Start AmitShield in live mode ──────────────────────────
-if systemctl list-unit-files | grep -q amitshield; then
-    systemctl start amitshield &
-fi
+set -e
+echo "[Live] Configuring Live Session Autostart..."
 
-# ─── Set live session wallpaper ──────────────────────────────
+# 1. Create the startup script directory
+mkdir -p /usr/local/bin
+
+# 2. Write the actual live session startup script
+cat > /usr/local/bin/amitos-live-login << 'EOF'
+#!/bin/bash
+# Wait for the desktop environment to settle
+sleep 3
+
+# Set live session wallpaper
 if [ -f /usr/share/amitos/wallpapers/amitos-wallpaper.jpg ]; then
-    su - amit -c "
-        DISPLAY=:0 DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1000/bus \
-        plasma-apply-wallpaperimage /usr/share/amitos/wallpapers/amitos-wallpaper.jpg
-    " 2>/dev/null || true
+    plasma-apply-wallpaperimage /usr/share/amitos/wallpapers/amitos-wallpaper.jpg 2>/dev/null || true
+elif [ -f /usr/share/amitos/branding/wallpaper.png ]; then
+    plasma-apply-wallpaperimage /usr/share/amitos/branding/wallpaper.png 2>/dev/null || true
 fi
 
-# ─── Welcome notification ────────────────────────────────────
-sleep 5
-su - amit -c "
-    DISPLAY=:0 DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1000/bus \
-    notify-send --urgency=normal --icon=amitos-logo \
+# Welcome notification
+notify-send --urgency=normal --icon=amitos-logo \
     'Welcome to Amit OS 🎉' \
-    'Fast • Secure • Beautiful\nAmitShield is protecting your system.'
-" 2>/dev/null || true
+    'Fast • Secure • Beautiful\nAmitShield is protecting your system.' 2>/dev/null || true
+EOF
+
+chmod +x /usr/local/bin/amitos-live-login
+
+# 3. Create the autostart entry for all users
+mkdir -p /etc/skel/.config/autostart
+cat > /etc/skel/.config/autostart/amitos-live-login.desktop << 'EOF'
+[Desktop Entry]
+Type=Application
+Exec=/usr/local/bin/amitos-live-login
+Hidden=false
+NoDisplay=false
+X-GNOME-Autostart-enabled=true
+Name=Amit OS Live Login Setup
+Comment=Sets up live user desktop wallpaper and notifications
+EOF
+
+echo "✓ Live session autostart configured successfully."

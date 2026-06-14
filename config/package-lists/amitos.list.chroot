@@ -9,7 +9,7 @@ firmware-linux-nonfree
 firmware-iwlwifi
 firmware-realtek
 firmware-atheros
-firmware-b43installer
+firmware-b43-installer
 amd64-microcode
 intel-microcode
 systemd
@@ -52,7 +52,7 @@ libgl1-mesa-dri
 picom
 
 #── Display Manager ─────────────────────────────────────────
-sddm
+# sddm (already included in Desktop section)
 
 #── Networking ───────────────────────────────────────────────
 network-manager
@@ -102,7 +102,8 @@ rhythmbox
 spectacle
 
 # 11. System Monitor (AmitMonitor)
-ksysguard
+plasma-systemmonitor
+ksystemstats
 htop
 
 # 12. Archive Manager (AmitArchive)
@@ -161,6 +162,9 @@ fonts-ubuntu
 fonts-roboto
 fonts-liberation
 ttf-mscorefonts-installer
+
+#── Compilers ────────────────────────────────────────────────
+g++
 
 #── Essential Utilities ──────────────────────────────────────
 gparted

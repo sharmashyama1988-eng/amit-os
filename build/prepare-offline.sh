@@ -56,6 +56,7 @@ lb config --mode debian \
     --distribution bookworm \
     --architecture amd64 \
     --initsystem systemd \
+    --archive-areas "main contrib non-free non-free-firmware" \
     --mirror-bootstrap "http://deb.debian.org/debian" \
     --mirror-binary "http://deb.debian.org/debian" \
     --linux-packages "linux-image" \

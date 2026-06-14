@@ -317,7 +317,10 @@ class AmitWelcome(Gtk.Window):
         self._stack.set_visible_child_name(pages[self._page])
 
     def _launch(self, btn, cmd):
-        subprocess.Popen(cmd.split())
+        try:
+            subprocess.Popen(cmd.split())
+        except Exception:
+            pass
 
 
 def main():

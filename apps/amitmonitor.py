@@ -40,25 +40,48 @@ def read_file(path):
 
 def get_cpu_percent():
     def read_stat():
-        line = read_file("/proc/stat").split("\n")[0].split()
-        vals = list(map(int, line[1:]))
-        idle  = vals[3]
-        total = sum(vals)
-        return idle, total
-    i1, t1 = read_stat()
+        stat_content = read_file("/proc/stat")
+        if not stat_content:
+            return 0, 0
+        lines = stat_content.split("\n")
+        if not lines:
+            return 0, 0
+        line = lines[0].split()
+        if len(line) < 5:
+            return 0, 0
+        try:
+            vals = list(map(int, line[1:]))
+            idle  = vals[3]
+            total = sum(vals)
+            return idle, total
+        except Exception:
+            return 0, 0
+    res1 = read_stat()
+    if res1 == (0, 0):
+        return 0.0
+    i1, t1 = res1
     time.sleep(0.3)
-    i2, t2 = read_stat()
+    res2 = read_stat()
+    if res2 == (0, 0):
+        return 0.0
+    i2, t2 = res2
     dt = t2 - t1
     return round(100.0 * (1 - (i2 - i1) / dt), 1) if dt else 0.0
 
 def get_mem():
     data = {}
-    for line in read_file("/proc/meminfo").split("\n"):
+    meminfo = read_file("/proc/meminfo")
+    if not meminfo:
+        return 0, 0
+    for line in meminfo.split("\n"):
         parts = line.split()
         if len(parts) >= 2:
-            data[parts[0].rstrip(":")] = int(parts[1])
+            try:
+                data[parts[0].rstrip(":")] = int(parts[1])
+            except ValueError:
+                pass
     total = data.get("MemTotal", 0)
-    avail = data.get("MemAvailable", 0)
+    avail = data.get("MemAvailable", total)
     used  = total - avail
     return used // 1024, total // 1024  # MB
 
@@ -74,13 +97,26 @@ def get_disk():
 
 def get_processes():
     procs = []
-    for pid in os.listdir("/proc"):
+    if not os.path.exists("/proc"):
+        return []
+    try:
+        pids = os.listdir("/proc")
+    except Exception:
+        return []
+    for pid in pids:
         if not pid.isdigit(): continue
         try:
-            stat  = read_file(f"/proc/{pid}/stat").split()
+            stat_content = read_file(f"/proc/{pid}/stat")
+            if not stat_content: continue
+            stat  = stat_content.split()
+            if len(stat) < 3: continue
             name  = stat[1].strip("()")
             state = stat[2]
-            rss   = int(read_file(f"/proc/{pid}/statm").split()[1]) * 4  # KB
+            statm_content = read_file(f"/proc/{pid}/statm")
+            if not statm_content: continue
+            statm = statm_content.split()
+            if len(statm) < 2: continue
+            rss   = int(statm[1]) * 4  # KB
             cmd   = read_file(f"/proc/{pid}/comm")
             procs.append((int(pid), cmd or name, state, rss // 1024))
         except: pass
@@ -202,7 +238,6 @@ class AmitMonitor(Gtk.Window):
         # Memory
         used_mb, total_mb = get_mem()
         pct_mem = round(100 * used_mb / total_mb, 1) if total_mb else 0
-        self.cpu_val[0]
         self.mem_val[0].set_label(f"{used_mb} / {total_mb} MB")
         self._set_bar(self.mem_val[1], pct_mem)
 
@@ -222,9 +257,16 @@ class AmitMonitor(Gtk.Window):
         self._prev_time = now
 
         # Uptime
-        up = int(read_file("/proc/uptime").split()[0])
-        h, m = divmod(up // 60, 60)
-        self.uptime_lbl.set_label(f"Uptime: {h}h {m}m")
+        uptime_data = read_file("/proc/uptime").split()
+        if uptime_data:
+            try:
+                up = int(float(uptime_data[0]))
+                h, m = divmod(up // 60, 60)
+                self.uptime_lbl.set_label(f"Uptime: {h}h {m}m")
+            except:
+                self.uptime_lbl.set_label("Uptime: N/A")
+        else:
+            self.uptime_lbl.set_label("Uptime: N/A")
 
         # Processes
         procs = get_processes()

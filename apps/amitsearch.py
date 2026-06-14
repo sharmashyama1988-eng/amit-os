@@ -82,12 +82,15 @@ class AmitSearch(Gtk.Window):
             if not os.path.exists(d): continue
             for f in os.listdir(d):
                 if f.endswith(".desktop"):
-                    with open(os.path.join(d, f)) as df:
-                        content = df.read()
-                        if q in content.lower():
-                            name = next((line[5:] for line in content.split("\n") if line.startswith("Name=")), f)
-                            exec_cmd = next((line[5:] for line in content.split("\n") if line.startswith("Exec=")), "")
-                            apps.append((name, exec_cmd, "App"))
+                    try:
+                        with open(os.path.join(d, f), errors='ignore') as df:
+                            content = df.read()
+                    except Exception:
+                        continue
+                    if q in content.lower():
+                        name = next((line[5:] for line in content.split("\n") if line.startswith("Name=")), f)
+                        exec_cmd = next((line[5:] for line in content.split("\n") if line.startswith("Exec=")), "")
+                        apps.append((name, exec_cmd, "App"))
         
         for name, cmd, kind in apps[:8]:
             self._add_result(name, cmd, kind)
@@ -118,7 +121,11 @@ class AmitSearch(Gtk.Window):
         
         if row:
             cmd = row._cmd.split("%")[0].strip() # Clean KDE/Gnome placeholders
-            subprocess.Popen(cmd.split())
+            if cmd:
+                try:
+                    subprocess.Popen(cmd.split())
+                except Exception:
+                    pass
             Gtk.main_quit()
 
     def _on_key(self, w, e):

@@ -31,8 +31,8 @@ class ThreatCard(Gtk.Box):
         """
         provider = Gtk.CssProvider()
         provider.load_from_data(css.encode())
-        self.get_style_context().add_class("threat-card")
-        self.get_style_context().add_provider(provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
+        self.add_css_class("threat-card")
+        Gtk.StyleContext.add_provider_for_display(Gdk.Display.get_default(), provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
 
         icon_lbl = Gtk.Label(label=icon)
         icon_lbl.get_style_context().add_class("stat-icon")
@@ -260,10 +260,21 @@ class AmitShieldUI(Adw.Application):
 
     def _do_clean(self):
         try:
-            subprocess.run(["apt-get", "autoclean", "-y"], capture_output=True, timeout=30)
+            res = subprocess.run(["apt-get", "autoclean", "-y"], capture_output=True, timeout=30)
+            if res.returncode == 0:
+                GLib.idle_add(self._append_log, "✓ System cleanup complete")
+                return
         except Exception:
             pass
-        GLib.idle_add(self._append_log, "✓ System cleanup complete")
+
+        try:
+            res = subprocess.run(["pkexec", "apt-get", "autoclean", "-y"], capture_output=True, timeout=30)
+            if res.returncode == 0:
+                GLib.idle_add(self._append_log, "✓ System cleanup complete")
+                return
+        except Exception:
+            pass
+        GLib.idle_add(self._append_log, "❌ System cleanup failed (requires root privileges)")
 
     def _update_defs(self, btn):
         self._append_log("Updating security definitions...")
@@ -271,10 +282,21 @@ class AmitShieldUI(Adw.Application):
 
     def _do_update(self):
         try:
-            subprocess.run(["freshclam"], capture_output=True, timeout=60)
+            res = subprocess.run(["freshclam"], capture_output=True, timeout=60)
+            if res.returncode == 0:
+                GLib.idle_add(self._append_log, "✓ Definitions updated")
+                return
         except Exception:
             pass
-        GLib.idle_add(self._append_log, "✓ Definitions updated")
+
+        try:
+            res = subprocess.run(["pkexec", "freshclam"], capture_output=True, timeout=60)
+            if res.returncode == 0:
+                GLib.idle_add(self._append_log, "✓ Definitions updated")
+                return
+        except Exception:
+            pass
+        GLib.idle_add(self._append_log, "❌ Definitions update failed (requires root privileges)")
 
     def _view_log(self, btn):
         try:

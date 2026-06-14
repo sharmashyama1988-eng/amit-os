@@ -89,6 +89,7 @@ setup_lb_config() {
         --mode debian \
         --distribution "$DEBIAN_SUITE" \
         --architecture "$ARCH" \
+        --archive-areas "main contrib non-free non-free-firmware" \
         --mirror-bootstrap "$MIRROR" \
         --mirror-binary "$MIRROR" \
         --binary-images iso-hybrid \

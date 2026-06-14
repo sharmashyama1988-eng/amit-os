@@ -87,6 +87,7 @@ class AmitNotes(Gtk.Window):
         self.notes   = []
         self.current = None
         self._dirty  = False
+        self._block_select = False
 
         provider = Gtk.CssProvider()
         provider.load_from_data(CSS)
@@ -223,14 +224,16 @@ class AmitNotes(Gtk.Window):
         self._refresh_list(entry.get_text())
 
     def _on_select(self, lb, row):
-        if not row: return
+        if self._block_select or not row: return
         self._save_current()
         note = next((n for n in self.notes if n.id == row._note_id), None)
         if not note: return
         self.current = note
+        self._block_select = True
         self.title_entry.set_text(note.title)
         buf = self.textview.get_buffer()
         buf.set_text(note.body)
+        self._block_select = False
         self._dirty = False
 
     def _mark_dirty(self, *_):
@@ -243,9 +246,16 @@ class AmitNotes(Gtk.Window):
         self.notes.append(note)
         self.current = note
         self._save_notes()
+        self._block_select = True
         self._refresh_list()
+        # Re-select the new note row in list_box
+        for child in self.list_box.get_children():
+            if getattr(child, "_note_id", None) == note.id:
+                self.list_box.select_row(child)
+                break
         self.title_entry.set_text("New Note")
         self.textview.get_buffer().set_text("")
+        self._block_select = False
         self.title_entry.grab_focus()
 
     def _save_current(self, *_):
@@ -256,7 +266,14 @@ class AmitNotes(Gtk.Window):
         self.current.ts    = time.time()
         self._save_notes()
         self._dirty = False
+        self._block_select = True
         self._refresh_list(self.search.get_text())
+        # Re-select the current note
+        for child in self.list_box.get_children():
+            if getattr(child, "_note_id", None) == self.current.id:
+                self.list_box.select_row(child)
+                break
+        self._block_select = False
 
     def _delete_note(self, *_):
         if not self.current: return
