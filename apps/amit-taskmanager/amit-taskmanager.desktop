@@ -1,0 +1,6 @@
+[Desktop Entry]
+Name=AmitOS Task Manager
+Exec=python3 /usr/local/amitos/apps/amit-taskmanager/amit-taskmanager.py
+Icon=utilities-system-monitor
+Type=Application
+Categories=System;Monitor;

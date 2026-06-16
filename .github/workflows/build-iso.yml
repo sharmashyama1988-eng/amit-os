@@ -157,6 +157,8 @@ jobs:
 
           echo "W0Rlc2t0b3AgRW50cnldCk5hbWU9QW1pdFNoaWVsZApFeGVjPWJhc2ggLWMgInN5c3RlbWN0bCBzdGF0dXMgYW1pdHNoaWVsZCB8IHplbml0eSAtLXRleHQtaW5mbyAtLXRpdGxlPUFtaXRTaGllbGQiCkljb249c2VjdXJpdHktaGlnaApUeXBlPUFwcGxpY2F0aW9uCkNhdGVnb3JpZXM9U3lzdGVtO1NlY3VyaXR5Ow==" | base64 -di | sudo tee "$APPS/amitshield-ui.desktop" > /dev/null
 
+          sudo find "$REPO/apps" -name "*.desktop" -exec cp {} "$APPS/" \; 2>/dev/null || true
+
       - name: Create Chroot Hooks
         run: |
           BUILD_DIR="/tmp/amitos-build"
