@@ -236,6 +236,11 @@ jobs:
 
       - name: Build ISO
         run: |
+          # Satisfy live-build's syslinux bootlogo check which crashes on Ubuntu runners
+          sudo mkdir -p /usr/share/syslinux/themes/debian/isolinux-live /tmp/dummy-theme
+          sudo touch /tmp/dummy-theme/splash.png
+          sudo sh -c 'cd /tmp/dummy-theme && echo "splash.png" | cpio -H newc -o > /usr/share/syslinux/themes/debian/isolinux-live/bootlogo' 2>/dev/null
+
           set -o pipefail
           BUILD_DIR="/tmp/amitos-build"
           cd "$BUILD_DIR"
