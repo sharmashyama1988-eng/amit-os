@@ -1,0 +1,14 @@
+[Unit]
+Description=Amit OS Background Optimizer Daemon
+After=network.target
+
+[Service]
+Type=simple
+User=root
+# Adjust the ExecStart path depending on where Amit OS is installed on the target system
+ExecStart=/usr/bin/python3 /opt/amitos/core/amitos-optimizer/optimizer.py
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

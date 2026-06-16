@@ -1,0 +1,19 @@
+# AmitOS GRUB Theme
+title-text: "AmitOS"
+desktop-image: ""
+desktop-color: "#0f172a"
+terminal-font: "Terminus Regular 14"
+title-color: "#3b82f6"
+title-font: "Terminus Regular 20"
+
++ boot_menu {
+    left = 20%
+    top = 30%
+    width = 60%
+    height = 40%
+    item_color = "#94a3b8"
+    selected_item_color = "#3b82f6"
+    item_height = 30
+    item_padding = 5
+    item_spacing = 5
+}

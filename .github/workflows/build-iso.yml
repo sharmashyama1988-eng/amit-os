@@ -110,7 +110,14 @@ jobs:
           sudo cp -r "$REPO/core/"*     "$BUILD_DIR/config/includes.chroot/usr/local/amitos/core/"     2>/dev/null || true
           sudo cp -r "$REPO/ui/"*       "$BUILD_DIR/config/includes.chroot/usr/local/amitos/ui/"       2>/dev/null || true
           sudo cp -r "$REPO/installer/"* "$BUILD_DIR/config/includes.chroot/etc/calamares/"           2>/dev/null || true
-          sudo cp -r "$REPO/themes/"*   "$BUILD_DIR/config/includes.chroot/usr/share/themes/"          2>/dev/null || true
+          
+          # KDE themes go to /usr/share/themes, SDDM to /usr/share/sddm/themes, GRUB to /boot/grub/themes
+          sudo cp -r "$REPO/themes/AmitOS-Dark" "$BUILD_DIR/config/includes.chroot/usr/share/themes/" 2>/dev/null || true
+          sudo mkdir -p "$BUILD_DIR/config/includes.chroot/usr/share/sddm/themes/sddm-amitos"
+          sudo cp -r "$REPO/themes/sddm-amitos/"* "$BUILD_DIR/config/includes.chroot/usr/share/sddm/themes/sddm-amitos/" 2>/dev/null || true
+          sudo mkdir -p "$BUILD_DIR/config/includes.chroot/boot/grub/themes/grub-amitos"
+          sudo cp -r "$REPO/themes/grub-amitos/"* "$BUILD_DIR/config/includes.chroot/boot/grub/themes/grub-amitos/" 2>/dev/null || true
+          
           sudo cp -r "$REPO/config/"*   "$BUILD_DIR/config/"                                           2>/dev/null || true
 
           sudo cp "$REPO/amitshield/amitshield-ui.py" \

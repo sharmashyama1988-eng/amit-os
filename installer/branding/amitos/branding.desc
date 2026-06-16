@@ -1,0 +1,29 @@
+---
+componentName: amitos
+windowExpanding: normal
+windowSize: 800px,520px
+windowPlacement: center
+
+strings:
+    productName:         AmitOS
+    shortProductName:    AmitOS
+    version:             1.0
+    shortVersion:        1.0
+    versionedName:       AmitOS 1.0
+    shortVersionedName:  AmitOS 1.0
+    bootloaderEntryName: AmitOS
+    productUrl:          https://github.com/amit/amitos
+    supportUrl:          https://github.com/amit/amitos/issues
+    knownIssuesUrl:      https://github.com/amit/amitos/issues
+    releaseNotesUrl:     https://github.com/amit/amitos/releases
+
+images:
+    productLogo:         "logo.png"
+    productIcon:         "logo.png"
+    productWelcome:      "languages.png"
+
+style:
+   SidebarBackground:    "#2c3133"
+   SidebarText:          "#FFFFFF"
+   SidebarTextCurrent:   "#4d915e"
+   SidebarBackgroundCurrent: "#242a2d"

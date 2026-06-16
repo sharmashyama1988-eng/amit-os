@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=Welcome to Amit OS
+Comment=Amit OS Welcome Application
+Exec=/usr/bin/env python3 /opt/amit-welcome/amit-welcome.py
+Icon=applications-system
+Terminal=false
+Type=Application
+Categories=System;Utility;
+StartupNotify=true
