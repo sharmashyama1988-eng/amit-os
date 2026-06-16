@@ -32,6 +32,7 @@ jobs:
             debootstrap squashfs-tools xorriso \
             grub-efi-amd64-bin grub-pc-bin mtools \
             syslinux isolinux syslinux-common syslinux-utils cpio \
+            syslinux-themes-debian debian-desktop-themes \
             wget curl git python3 python3-pip dos2unix
 
       - name: Install Python Imaging Library
@@ -87,6 +88,9 @@ jobs:
           sudo find /usr/lib/live/build/ -type f \
             -exec sed -i 's|main/main|main|g' {} + \
             2>/dev/null || true
+
+          # Hot-patch lb_binary_syslinux to prevent bootlogo missing crash
+          sudo sed -i 's|cpio -t < binary/isolinux/bootlogo|touch binary/isolinux/bootlogo; cpio -t < binary/isolinux/bootlogo|g' /usr/lib/live/build/lb_binary_syslinux 2>/dev/null || true
 
       - name: Sync Project Files
         run: |
