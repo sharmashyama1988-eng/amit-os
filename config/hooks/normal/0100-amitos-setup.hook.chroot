@@ -152,7 +152,17 @@ EOF
     update-grub 2>/dev/null || true
 fi
 
-# ── 9. Final Cleanup ─────────────────────────────────────────
+# ── 9. AmitOS CLI Scripts — ensure executable ───────────────
+echo "[Core] Setting permissions on AmitOS CLI scripts..."
+AMITOS_BIN="/usr/local/bin"
+for script in amitos-update amitos-info amitos-repair amitos-welcome; do
+    if [ -f "${AMITOS_BIN}/${script}" ]; then
+        chmod +x "${AMITOS_BIN}/${script}"
+        echo "  ✔ chmod +x ${AMITOS_BIN}/${script}"
+    fi
+done
+
+# ── 10. Final Cleanup ─────────────────────────────────────────
 echo "[Core] Finalizing OS Image..."
 apt-get autoremove -y 2>/dev/null || true
 apt-get clean 2>/dev/null || true

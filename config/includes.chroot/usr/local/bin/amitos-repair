@@ -1,0 +1,209 @@
+#!/bin/bash
+# =============================================================================
+#  amitos-repair — AmitOS System Repair Utility
+#  Location : /usr/local/bin/amitos-repair
+#  Run as   : root (or via sudo)
+# =============================================================================
+
+# ── Colours ──────────────────────────────────────────────────────────────────
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+CYAN='\033[0;36m'
+BLUE='\033[0;34m'
+BOLD='\033[1m'
+RESET='\033[0m'
+
+LOG_FILE="/var/log/amitos-repair.log"
+
+# ── Helpers ───────────────────────────────────────────────────────────────────
+log() {
+    echo "$(date '+%Y-%m-%d %H:%M:%S')  $*" >> "$LOG_FILE"
+}
+
+print_banner() {
+    echo -e "${RED}${BOLD}"
+    echo "  ╔═══════════════════════════════════════╗"
+    echo "  ║       AmitOS System Repair Tool       ║"
+    echo "  ╚═══════════════════════════════════════╝"
+    echo -e "${RESET}"
+}
+
+step() {
+    local msg="$*"
+    echo -e "\n${BLUE}${BOLD}▶  ${msg}${RESET}"
+    log "STEP: ${msg}"
+}
+
+ok() {
+    echo -e "${GREEN}✔  $*${RESET}"
+    log "OK:   $*"
+}
+
+warn() {
+    echo -e "${YELLOW}⚠  $*${RESET}"
+    log "WARN: $*"
+}
+
+fail() {
+    echo -e "${RED}✘  $*${RESET}"
+    log "FAIL: $*"
+}
+
+separator() {
+    echo -e "${CYAN}────────────────────────────────────────────${RESET}"
+}
+
+require_root() {
+    if [[ $EUID -ne 0 ]]; then
+        fail "This script must be run as root.  Try: sudo amitos-repair"
+        exit 1
+    fi
+}
+
+# ── Repair Steps ─────────────────────────────────────────────────────────────
+
+fix_dpkg() {
+    step "Configuring pending dpkg packages …"
+    if dpkg --configure -a 2>&1 | tee -a "$LOG_FILE"; then
+        ok "dpkg --configure -a completed."
+    else
+        warn "dpkg configure had warnings — check ${LOG_FILE}."
+    fi
+}
+
+fix_apt_broken() {
+    step "Fixing broken APT dependencies …"
+    if DEBIAN_FRONTEND=noninteractive apt-get install -f -y \
+           -o Dpkg::Options::="--force-confdef" \
+           -o Dpkg::Options::="--force-confold" \
+           2>&1 | tee -a "$LOG_FILE"; then
+        ok "Broken packages fixed."
+    else
+        fail "apt-get -f install failed.  See ${LOG_FILE} for details."
+    fi
+}
+
+clean_apt_locks() {
+    step "Clearing stale APT/dpkg lock files …"
+    local locks=(
+        /var/lib/dpkg/lock
+        /var/lib/dpkg/lock-frontend
+        /var/cache/apt/archives/lock
+        /var/lib/apt/lists/lock
+    )
+    for lk in "${locks[@]}"; do
+        if [[ -f "$lk" ]]; then
+            rm -f "$lk"
+            ok "Removed lock: ${lk}"
+        fi
+    done
+    dpkg --configure -a 2>/dev/null || true
+    ok "Lock cleanup done."
+}
+
+fix_filesystem() {
+    step "Checking root filesystem integrity …"
+    ROOT_DEV=$(findmnt -n -o SOURCE / 2>/dev/null || echo "")
+    if [[ -z "$ROOT_DEV" ]]; then
+        warn "Could not determine root device — skipping fsck."
+        return
+    fi
+
+    # Root is mounted; schedule fsck on next boot instead
+    echo -e "  ${YELLOW}Root filesystem is live — scheduling fsck on next boot …${RESET}"
+    if command -v tune2fs &>/dev/null; then
+        tune2fs -C 99 "$ROOT_DEV" 2>/dev/null && ok "Forced fsck scheduled for next reboot." \
+            || warn "tune2fs failed; try: sudo touch /forcefsck"
+    else
+        touch /forcefsck 2>/dev/null && ok "Created /forcefsck — fsck will run on next boot." \
+            || warn "Could not schedule fsck.  Please run manually from recovery mode."
+    fi
+
+    # Check non-root filesystems if possible
+    step "Checking non-root filesystems (unmounted) …"
+    while IFS= read -r dev; do
+        [[ "$dev" == "$ROOT_DEV" ]] && continue
+        echo -e "  Checking ${dev} …"
+        fsck -n "$dev" 2>&1 | tail -3 | while IFS= read -r line; do
+            echo "    $line"
+        done
+        log "fsck -n on ${dev} done."
+    done < <(lsblk -ln -o NAME,TYPE 2>/dev/null | awk '$2=="part"{print "/dev/"$1}')
+    ok "Filesystem check complete."
+}
+
+fix_network() {
+    step "Restarting NetworkManager …"
+    if systemctl restart NetworkManager 2>/dev/null; then
+        ok "NetworkManager restarted."
+    else
+        warn "NetworkManager restart failed or not present."
+    fi
+}
+
+fix_amitshield() {
+    step "Restarting AmitShield …"
+    if systemctl list-units --all --type=service 2>/dev/null | grep -q "amitshield"; then
+        systemctl stop  amitshield 2>/dev/null || true
+        sleep 1
+        systemctl start amitshield 2>/dev/null \
+            && ok "AmitShield restarted successfully." \
+            || fail "AmitShield restart failed — check: journalctl -u amitshield"
+    else
+        warn "AmitShield service not found — skipping."
+    fi
+}
+
+check_disk_space() {
+    step "Checking available disk space …"
+    local usage
+    usage=$(df / --output=pcent 2>/dev/null | tail -1 | tr -d ' %')
+    if (( usage >= 90 )); then
+        warn "Root disk is ${usage}% full!  Cleaning package cache …"
+        apt-get autoclean -y 2>/dev/null | tee -a "$LOG_FILE"
+        apt-get autoremove -y --purge 2>/dev/null | tee -a "$LOG_FILE"
+        ok "Cleanup done."
+    else
+        ok "Disk usage is ${usage}% — looks healthy."
+    fi
+}
+
+print_summary() {
+    separator
+    echo -e "  ${GREEN}${BOLD}Repair sequence complete!${RESET}"
+    echo -e "  Log saved to: ${CYAN}${LOG_FILE}${RESET}"
+    echo -e "  Time: $(date '+%Y-%m-%d %H:%M:%S')"
+    separator
+    echo ""
+    echo -e "  ${YELLOW}If problems persist, try booting into Recovery Mode and"
+    echo -e "  running: sudo amitos-repair${RESET}"
+    echo ""
+}
+
+# ── Main ──────────────────────────────────────────────────────────────────────
+main() {
+    print_banner
+    require_root
+
+    separator
+    echo -e "  ${BOLD}Started :${RESET} $(date '+%Y-%m-%d %H:%M:%S')"
+    echo -e "  ${BOLD}Log     :${RESET} ${LOG_FILE}"
+    separator
+
+    log "=== AmitOS Repair started ==="
+
+    clean_apt_locks
+    fix_dpkg
+    fix_apt_broken
+    check_disk_space
+    fix_filesystem
+    fix_network
+    fix_amitshield
+
+    log "=== AmitOS Repair finished ==="
+
+    print_summary
+}
+
+main "$@"

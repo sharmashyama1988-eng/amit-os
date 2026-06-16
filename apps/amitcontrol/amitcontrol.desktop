@@ -1,0 +1,13 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=AmitControl
+GenericName=Control Panel
+Comment=System Control Center for Amit OS
+Exec=python3 /opt/amit-os/apps/amitcontrol/amitcontrol.py
+Icon=preferences-system
+Terminal=false
+Categories=Settings;System;GTK;
+Keywords=control;panel;settings;system;network;display;users;
+StartupNotify=true
+StartupWMClass=AmitControl

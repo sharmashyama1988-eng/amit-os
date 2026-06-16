@@ -1,0 +1,124 @@
+================================================================================
+                           AmitOS — Falcon Edition
+                              Version 1.0 | amd64
+                     Built on Debian 12 (Bookworm) | 2026-06-14
+================================================================================
+
+ABOUT
+-----
+AmitOS is a custom, Debian-based Linux distribution designed for everyday users
+who demand a beautiful, fast, and reliable computing experience. Built on the
+rock-solid foundation of Debian 12 "Bookworm", AmitOS ships with a curated
+set of applications, a polished GNOME desktop environment, and sensible defaults
+so you can be productive right from the first boot.
+
+The "Falcon" release marks the debut of AmitOS — soaring high with performance
+optimizations, full multimedia support, and a clean out-of-the-box experience.
+
+
+FEATURES
+--------
+  * Polished GNOME desktop with custom AmitOS theme and icon set
+  * Full multimedia support (codecs, VLC, Rhythmbox included)
+  * Privacy and security hardened defaults (UFW firewall enabled)
+  * ZRAM swap enabled for improved memory performance
+  * Fast boot via systemd optimization
+  * Comprehensive hardware support (Realtek, Broadcom, NVIDIA drivers)
+  * LibreOffice suite for productivity
+  * GIMP and Shotwell for photo management
+  * Thunderbird for email
+  * Firefox ESR as default web browser
+
+
+SYSTEM REQUIREMENTS
+-------------------
+  Minimum:
+    CPU     : 64-bit dual-core processor (x86_64)
+    RAM     : 2 GB
+    Storage : 20 GB free disk space
+    Display : 1024 x 768 resolution
+
+  Recommended:
+    CPU     : 64-bit quad-core processor
+    RAM     : 4 GB or more
+    Storage : 40 GB or more (SSD preferred)
+    Display : 1920 x 1080 (Full HD)
+
+
+DEFAULT APPLICATIONS
+--------------------
+  Web Browser      : Firefox ESR
+  Office Suite     : LibreOffice (Writer, Calc, Impress, Draw)
+  File Manager     : GNOME Files (Nautilus)
+  Terminal         : GNOME Terminal
+  Text Editor      : GNOME Text Editor
+  Music Player     : Rhythmbox
+  Photo Manager    : Shotwell
+  Video Player     : VLC Media Player
+  Image Editor     : GIMP
+  Email Client     : Thunderbird
+  Disk Manager     : GParted
+  Package Manager  : Synaptic + GNOME Software Center
+  System Monitor   : GNOME System Monitor
+
+
+INSTALLATION
+------------
+  1. Download the AmitOS ISO from the official GitHub releases page.
+  2. Flash the ISO to a USB drive (minimum 4 GB) using:
+       - Balena Etcher (recommended, cross-platform)
+       - dd command: sudo dd if=amitos-1.0-amd64.iso of=/dev/sdX bs=4M status=progress
+  3. Boot from the USB drive (press F12/F11/Del at POST for boot menu).
+  4. Select "Install AmitOS" or "Try AmitOS Live" from the GRUB menu.
+  5. Follow the on-screen Calamares installer for guided installation.
+  6. Reboot after installation and enjoy AmitOS!
+
+
+POST-INSTALL SETUP
+------------------
+  Update the system:
+    sudo apt update && sudo apt upgrade -y
+
+  Install additional drivers (if needed):
+    sudo apt install firmware-linux firmware-linux-nonfree
+
+  Enable additional repositories:
+    sudo dpkg --add-architecture i386
+    sudo apt update
+
+  Check AmitOS version:
+    cat /usr/share/amitos/version
+
+
+SUPPORT & COMMUNITY
+--------------------
+  GitHub Repository : https://github.com/sharmashyama1988/amit-os
+  Issue Tracker     : https://github.com/sharmashyama1988/amit-os/issues
+  Maintainer        : Amit Sharma <sharmashyama1988@gmail.com>
+
+
+LICENSE
+-------
+  AmitOS is free software distributed under the GNU General Public License v3.0.
+  Individual components and packages are subject to their respective licenses.
+  See /usr/share/doc/ for individual package license information.
+
+  Debian base components are distributed under their respective open source
+  licenses. For more information visit: https://www.debian.org/legal/
+
+
+ACKNOWLEDGEMENTS
+----------------
+  AmitOS stands on the shoulders of giants:
+    * The Debian Project         — https://www.debian.org
+    * The Linux Kernel           — https://www.kernel.org
+    * The GNOME Project          — https://www.gnome.org
+    * Debian Live Systems        — https://live-team.pages.debian.net/live-manual/
+    * The entire open source community whose work makes this possible.
+
+  Special thanks to all contributors, testers, and users of AmitOS.
+
+
+================================================================================
+                   AmitOS 1.0 "Falcon" — Fly High, Fly Free
+================================================================================

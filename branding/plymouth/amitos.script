@@ -1,0 +1,189 @@
+// ============================================================
+//  AmitOS Plymouth Boot Splash Theme
+//  File: amitos.script
+//  Description: Animated boot splash with progress bar and
+//               status messages for AmitOS.
+// ============================================================
+
+// ─── Screen Dimensions ──────────────────────────────────────
+screen_width  = Plymouth.GetWidth();
+screen_height = Plymouth.GetHeight();
+
+// ─── Wallpaper / Background ──────────────────────────────────
+wallpaper_image = Image("amitos-wallpaper.png");
+
+// Scale wallpaper to fill the screen, preserving aspect ratio
+ww = wallpaper_image.GetWidth();
+wh = wallpaper_image.GetHeight();
+
+scale_x = screen_width  / ww;
+scale_y = screen_height / wh;
+scale   = (scale_x > scale_y) ? scale_x : scale_y;
+
+scaled_wallpaper = wallpaper_image.Scale(Math.Int(ww * scale),
+                                         Math.Int(wh * scale));
+
+wallpaper_sprite = Sprite(scaled_wallpaper);
+wallpaper_sprite.SetX(Math.Int((screen_width  - scaled_wallpaper.GetWidth())  / 2));
+wallpaper_sprite.SetY(Math.Int((screen_height - scaled_wallpaper.GetHeight()) / 2));
+wallpaper_sprite.SetZ(-100);
+
+// ─── Logo ────────────────────────────────────────────────────
+logo_image  = Image("amitos-logo.png");
+logo_sprite = Sprite(logo_image);
+logo_sprite.SetX(Math.Int((screen_width  - logo_image.GetWidth())  / 2));
+logo_sprite.SetY(Math.Int((screen_height - logo_image.GetHeight()) / 2) - 60);
+logo_sprite.SetZ(10);
+
+// ─── Progress Bar ────────────────────────────────────────────
+BAR_WIDTH  = Math.Int(screen_width * 0.55);   // 55 % of screen width
+BAR_HEIGHT = 6;
+BAR_X      = Math.Int((screen_width - BAR_WIDTH) / 2);
+BAR_Y      = Math.Int(screen_height * 0.72);
+BAR_RADIUS = 3;
+
+// Background track
+bar_bg_image  = Image.CreateFromFile(null);   // we draw programmatically
+bar_bg        = Image(BAR_WIDTH, BAR_HEIGHT);
+bar_bg.Fill(0.15, 0.15, 0.20, 0.75);         // dark semi-transparent track
+bar_bg_sprite = Sprite(bar_bg);
+bar_bg_sprite.SetX(BAR_X);
+bar_bg_sprite.SetY(BAR_Y);
+bar_bg_sprite.SetZ(20);
+
+// Filled portion (starts at 0 width)
+bar_fill_image  = Image(1, BAR_HEIGHT);       // placeholder; resized on update
+bar_fill_image.Fill(0.27, 0.72, 0.95, 1.0);  // AmitOS accent blue
+bar_fill_sprite = Sprite(bar_fill_image);
+bar_fill_sprite.SetX(BAR_X);
+bar_fill_sprite.SetY(BAR_Y);
+bar_fill_sprite.SetZ(21);
+
+// ─── Boot Progress Callback ──────────────────────────────────
+fun BootProgressCallback(time, progress) {
+    fill_width = Math.Int(BAR_WIDTH * progress);
+    if (fill_width < 1) {
+        fill_width = 1;
+    }
+
+    new_fill = Image(fill_width, BAR_HEIGHT);
+    new_fill.Fill(0.27, 0.72, 0.95, 1.0);    // #45B8F4 – accent blue
+    bar_fill_sprite.SetImage(new_fill);
+}
+
+Plymouth.SetBootProgressFunction(BootProgressCallback);
+
+// ─── Status / Message Display ────────────────────────────────
+MSG_MAX_CHARS = 80;
+MSG_FONT_SIZE = 13;
+MSG_Y         = BAR_Y + BAR_HEIGHT + 16;
+
+// Single text sprite that is updated with the latest message
+status_image  = Image.Text("", 1.0, 1.0, 1.0, 0.65, "Sans " + MSG_FONT_SIZE);
+status_sprite = Sprite(status_image);
+status_sprite.SetX(Math.Int((screen_width - status_image.GetWidth()) / 2));
+status_sprite.SetY(MSG_Y);
+status_sprite.SetZ(20);
+
+fun UpdateStatusCallback(status) {
+    // Trim to max chars to avoid overflow
+    msg = String.Sub(status, 0, MSG_MAX_CHARS);
+
+    new_img = Image.Text(msg, 1.0, 1.0, 1.0, 0.65, "Sans " + MSG_FONT_SIZE);
+    status_sprite.SetImage(new_img);
+    status_sprite.SetX(Math.Int((screen_width - new_img.GetWidth()) / 2));
+}
+
+Plymouth.SetUpdateStatusFunction(UpdateStatusCallback);
+
+// ─── Spinner / Pulse Animation ───────────────────────────────
+SPINNER_FRAMES  = 8;
+SPINNER_RADIUS  = 20;
+SPINNER_DOT_R   = 4;
+SPINNER_CX      = Math.Int(screen_width / 2);
+SPINNER_CY      = BAR_Y - 40;
+SPINNER_Z       = 25;
+spinner_frame   = 0;
+
+// Pre-build sprite array for spinner dots
+for (i = 0; i < SPINNER_FRAMES; i++) {
+    dot_img = Image(SPINNER_DOT_R * 2, SPINNER_DOT_R * 2);
+    alpha   = 0.25 + (0.75 * i / (SPINNER_FRAMES - 1));
+    dot_img.Fill(0.27, 0.72, 0.95, alpha);
+    dot_sprite[i] = Sprite(dot_img);
+    dot_sprite[i].SetZ(SPINNER_Z);
+}
+
+fun UpdateSpinnerPosition() {
+    for (i = 0; i < SPINNER_FRAMES; i++) {
+        idx   = Math.Int((spinner_frame + i) % SPINNER_FRAMES);
+        angle = (idx / SPINNER_FRAMES) * 2 * 3.14159265;
+        sx    = SPINNER_CX + Math.Int(SPINNER_RADIUS * Math.Cos(angle)) - SPINNER_DOT_R;
+        sy    = SPINNER_CY + Math.Int(SPINNER_RADIUS * Math.Sin(angle)) - SPINNER_DOT_R;
+        dot_sprite[i].SetX(sx);
+        dot_sprite[i].SetY(sy);
+    }
+    spinner_frame = (spinner_frame + 1) % SPINNER_FRAMES;
+}
+
+// ─── Refresh Callback (called ~60 fps by Plymouth) ───────────
+fun RefreshCallback() {
+    UpdateSpinnerPosition();
+}
+
+Plymouth.SetRefreshFunction(RefreshCallback);
+
+// ─── Display Password Prompt ─────────────────────────────────
+fun DisplayPasswordCallback(prompt, bullets) {
+    prompt_img    = Image.Text(prompt + " ", 1.0, 1.0, 1.0, 1.0, "Sans 14");
+    prompt_sprite = Sprite(prompt_img);
+    prompt_sprite.SetX(Math.Int((screen_width - prompt_img.GetWidth()) / 2));
+    prompt_sprite.SetY(Math.Int(screen_height * 0.80));
+    prompt_sprite.SetZ(30);
+
+    // Draw bullet dots for typed characters
+    dots = "";
+    for (b = 0; b < bullets; b++) {
+        dots = dots + "● ";
+    }
+    dots_img    = Image.Text(dots, 0.27, 0.72, 0.95, 1.0, "Sans 16");
+    dots_sprite = Sprite(dots_img);
+    dots_sprite.SetX(Math.Int((screen_width - dots_img.GetWidth()) / 2));
+    dots_sprite.SetY(Math.Int(screen_height * 0.80) + 30);
+    dots_sprite.SetZ(30);
+}
+
+Plymouth.SetDisplayPasswordFunction(DisplayPasswordCallback);
+
+// ─── Message Log (last N lines) ──────────────────────────────
+LOG_LINES   = 5;
+LOG_FONT    = "Monospace 11";
+LOG_Y_START = Math.Int(screen_height * 0.88);
+LOG_LINE_H  = 18;
+log_sprites = [];
+log_msgs    = [];
+
+for (l = 0; l < LOG_LINES; l++) {
+    log_sprites[l] = Sprite();
+    log_sprites[l].SetZ(20);
+    log_msgs[l]    = "";
+}
+
+fun MessageCallback(msg) {
+    // Shift messages up
+    for (l = 0; l < LOG_LINES - 1; l++) {
+        log_msgs[l] = log_msgs[l + 1];
+    }
+    log_msgs[LOG_LINES - 1] = msg;
+
+    // Re-render all lines
+    for (l = 0; l < LOG_LINES; l++) {
+        age_alpha = 0.35 + (0.65 * l / (LOG_LINES - 1));
+        line_img  = Image.Text(log_msgs[l], 1.0, 1.0, 1.0, age_alpha, LOG_FONT);
+        log_sprites[l].SetImage(line_img);
+        log_sprites[l].SetX(Math.Int((screen_width - line_img.GetWidth()) / 2));
+        log_sprites[l].SetY(LOG_Y_START + l * LOG_LINE_H);
+    }
+}
+
+Plymouth.SetMessageFunction(MessageCallback);

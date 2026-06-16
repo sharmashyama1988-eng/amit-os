@@ -1,0 +1,183 @@
+#!/bin/bash
+# =============================================================================
+#  amitos-info — AmitOS System Information
+#  Location : /usr/local/bin/amitos-info
+#  Run as   : any user
+# =============================================================================
+
+# ── Colours ──────────────────────────────────────────────────────────────────
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+CYAN='\033[0;36m'
+BLUE='\033[0;34m'
+MAGENTA='\033[0;35m'
+BOLD='\033[1m'
+RESET='\033[0m'
+
+# ── Helpers ───────────────────────────────────────────────────────────────────
+field() {
+    printf "  ${CYAN}%-20s${RESET} ${BOLD}%s${RESET}\n" "$1" "$2"
+}
+
+section() {
+    echo -e "\n  ${BLUE}${BOLD}── $1 ──${RESET}"
+}
+
+separator() {
+    echo -e "  ${CYAN}╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌${RESET}"
+}
+
+# ── Gather info ───────────────────────────────────────────────────────────────
+
+# OS Version
+if [[ -f /etc/amitos-release ]]; then
+    AMITOS_VERSION=$(cat /etc/amitos-release 2>/dev/null || echo "Unknown")
+elif [[ -f /etc/os-release ]]; then
+    AMITOS_VERSION=$(. /etc/os-release; echo "${PRETTY_NAME:-Unknown}")
+else
+    AMITOS_VERSION="Unknown"
+fi
+
+# Kernel
+KERNEL=$(uname -r 2>/dev/null || echo "Unknown")
+
+# Architecture
+ARCH=$(uname -m 2>/dev/null || echo "Unknown")
+
+# Hostname
+HOSTNAME=$(hostname 2>/dev/null || echo "Unknown")
+
+# Desktop Environment
+DESKTOP="${XDG_CURRENT_DESKTOP:-${DESKTOP_SESSION:-${GDMSESSION:-Unknown}}}"
+[[ "$DESKTOP" == "Unknown" ]] && DESKTOP=$(echo "${XDG_SESSION_DESKTOP:-Unknown}")
+
+# Uptime
+UPTIME_RAW=$(uptime -p 2>/dev/null || echo "Unknown")
+
+# Boot time
+BOOT_TIME=$(who -b 2>/dev/null | awk '{print $3, $4}' || echo "Unknown")
+
+# CPU info
+CPU_MODEL=$(grep -m1 "model name" /proc/cpuinfo 2>/dev/null | cut -d: -f2 | sed 's/^ *//' || echo "Unknown")
+CPU_CORES=$(nproc --all 2>/dev/null || echo "?")
+CPU_THREADS=$(grep -c "^processor" /proc/cpuinfo 2>/dev/null || echo "?")
+
+# CPU usage (1-second sample)
+CPU_USAGE=$(top -bn1 2>/dev/null | grep "Cpu(s)" | awk '{print $2 + $4}' | cut -d. -f1 || echo "?")
+
+# RAM
+TOTAL_RAM_KB=$(grep MemTotal /proc/meminfo 2>/dev/null | awk '{print $2}' || echo "0")
+FREE_RAM_KB=$(grep MemAvailable /proc/meminfo 2>/dev/null | awk '{print $2}' || echo "0")
+USED_RAM_KB=$(( TOTAL_RAM_KB - FREE_RAM_KB ))
+TOTAL_RAM_MB=$(( TOTAL_RAM_KB / 1024 ))
+USED_RAM_MB=$(( USED_RAM_KB / 1024 ))
+FREE_RAM_MB=$(( FREE_RAM_KB / 1024 ))
+
+if (( TOTAL_RAM_KB > 0 )); then
+    RAM_PCT=$(( 100 * USED_RAM_KB / TOTAL_RAM_KB ))
+else
+    RAM_PCT=0
+fi
+
+# RAM bar
+ram_bar() {
+    local pct=$1
+    local filled=$(( pct / 5 ))
+    local empty=$(( 20 - filled ))
+    local bar=""
+    for (( i=0; i<filled; i++ )); do bar+="█"; done
+    for (( i=0; i<empty; i++ )); do bar+="░"; done
+    echo "$bar"
+}
+
+RAM_BAR=$(ram_bar "$RAM_PCT")
+if (( RAM_PCT >= 80 )); then
+    RAM_COLOR=$RED
+elif (( RAM_PCT >= 60 )); then
+    RAM_COLOR=$YELLOW
+else
+    RAM_COLOR=$GREEN
+fi
+
+# Swap
+TOTAL_SWAP_KB=$(grep SwapTotal /proc/meminfo 2>/dev/null | awk '{print $2}' || echo "0")
+FREE_SWAP_KB=$(grep SwapFree  /proc/meminfo  2>/dev/null | awk '{print $2}' || echo "0")
+USED_SWAP_KB=$(( TOTAL_SWAP_KB - FREE_SWAP_KB ))
+TOTAL_SWAP_MB=$(( TOTAL_SWAP_KB / 1024 ))
+USED_SWAP_MB=$(( USED_SWAP_KB  / 1024 ))
+
+# Disk (root filesystem)
+DISK_INFO=$(df -h / 2>/dev/null | tail -1 || echo "? ? ? ?")
+DISK_TOTAL=$(echo "$DISK_INFO" | awk '{print $2}')
+DISK_USED=$(echo  "$DISK_INFO" | awk '{print $3}')
+DISK_FREE=$(echo  "$DISK_INFO" | awk '{print $4}')
+DISK_PCT=$(echo   "$DISK_INFO" | awk '{print $5}')
+
+# IP address
+IP_ADDR=$(hostname -I 2>/dev/null | awk '{print $1}' || echo "N/A")
+
+# AmitShield status
+if systemctl is-active --quiet amitshield 2>/dev/null; then
+    SHIELD_STATUS="${GREEN}● Active${RESET}"
+elif systemctl list-units --all --type=service 2>/dev/null | grep -q "amitshield"; then
+    SHIELD_STATUS="${RED}● Inactive${RESET}"
+else
+    SHIELD_STATUS="${YELLOW}○ Not installed${RESET}"
+fi
+
+# ── Print ─────────────────────────────────────────────────────────────────────
+clear
+
+echo ""
+echo -e "  ${CYAN}${BOLD}╔══════════════════════════════════════════════╗${RESET}"
+echo -e "  ${CYAN}${BOLD}║          AmitOS System Information           ║${RESET}"
+echo -e "  ${CYAN}${BOLD}╚══════════════════════════════════════════════╝${RESET}"
+
+section "System"
+separator
+field "OS Version"   "$AMITOS_VERSION"
+field "Kernel"       "$KERNEL"
+field "Architecture" "$ARCH"
+field "Hostname"     "$HOSTNAME"
+field "Desktop"      "$DESKTOP"
+field "IP Address"   "$IP_ADDR"
+
+section "Uptime"
+separator
+field "Up since"     "${BOOT_TIME:-Unknown}"
+field "Duration"     "$UPTIME_RAW"
+
+section "CPU"
+separator
+field "Model"        "$CPU_MODEL"
+field "Cores/Threads" "${CPU_CORES} cores / ${CPU_THREADS} threads"
+field "Current Load"  "${CPU_USAGE}%"
+
+section "Memory"
+separator
+printf "  ${CYAN}%-20s${RESET} ${RAM_COLOR}%s${RESET}  %s%%\n" \
+       "RAM Usage" "$RAM_BAR" "$RAM_PCT"
+field "RAM Total"    "${TOTAL_RAM_MB} MiB"
+field "RAM Used"     "${USED_RAM_MB} MiB"
+field "RAM Free"     "${FREE_RAM_MB} MiB"
+if (( TOTAL_SWAP_MB > 0 )); then
+    field "Swap"     "${USED_SWAP_MB} / ${TOTAL_SWAP_MB} MiB"
+else
+    field "Swap"     "None"
+fi
+
+section "Disk  ( / )"
+separator
+field "Total"        "$DISK_TOTAL"
+field "Used"         "${DISK_USED}  (${DISK_PCT})"
+field "Free"         "$DISK_FREE"
+
+section "AmitOS"
+separator
+printf "  ${CYAN}%-20s${RESET} ${SHIELD_STATUS}\n" "AmitShield"
+field "Config Tool"   "amitos-update | amitos-repair"
+
+echo ""
+separator
+echo ""

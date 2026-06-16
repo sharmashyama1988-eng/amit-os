@@ -1,0 +1,7 @@
+[Plymouth Theme]
+Name=AmitOS
+Description=AmitOS Boot Splash
+ModuleName=script
+[script]
+ImageDir=/usr/share/plymouth/themes/amitos
+ScriptFile=/usr/share/plymouth/themes/amitos/amitos.script

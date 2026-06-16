@@ -1,7 +1,15 @@
 # Build artifacts
 output/*.iso
 output/build.log
-cache/
+
+# Cache folder – ignore contents but keep the folder via .gitkeep
+cache/*
+!cache/.gitkeep
+
+# Logs folder – ignore contents but keep the folder via .gitkeep
+logs/*
+!logs/.gitkeep
+
 *.log
 
 # OS files
@@ -19,3 +27,23 @@ desktop.ini
 
 # Large service dump
 services.txt
+
+# Auto-generated / large junk files
+job_log.txt
+job_log2.txt
+latest_run.json
+run_jobs.json
+run_status.json
+build.log
+logs.zip
+*.deb
+dummy.cpio
+fix-typo.py
+fix.py
+ORIGINAL_REQUEST.md
+.agents/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo

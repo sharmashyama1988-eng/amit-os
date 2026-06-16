@@ -1,0 +1,44 @@
+
+  ___        _ _    ___  ____
+ / _ \      (_) |  / _ \/ ___|
+| | | |_____ | || | | | \___ \
+| |_| |_____| | || |_| |___) |
+ \___/      |_|_| \___/|____/
+
+         AmitOS — Falcon Edition
+         Version 1.0 | Built on Debian 12 Bookworm
+         Build Date: 2026-06-14 | Arch: amd64
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  Welcome to AmitOS!
+  A custom Linux distro built for performance,
+  productivity, and elegance.
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  Useful Commands:
+  ─────────────────────────────────────────────
+  amitos-version       Show OS version info
+  amitos-update        Update the system
+  sudo apt update      Refresh package lists
+  sudo apt upgrade     Upgrade installed packages
+  neofetch             Show system information
+  htop                 Interactive process viewer
+  lsblk                List block devices
+  df -h                Show disk usage
+  free -h              Show memory usage
+  ip a                 Show network interfaces
+  ─────────────────────────────────────────────
+
+  System Info:
+    Kernel  : $(uname -r)
+    Uptime  : $(uptime -p)
+    Users   : $(users | wc -w) logged in
+    Load    : $(cat /proc/loadavg | awk '{print $1, $2, $3}')
+
+  "Soaring high with the Falcon — AmitOS 1.0"
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  Docs    : https://github.com/sharmashyama1988/amit-os
+  Issues  : https://github.com/sharmashyama1988/amit-os/issues
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+

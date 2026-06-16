@@ -1,0 +1,91 @@
+# =============================================================================
+# AmitShield - Default Firewall Rules
+# Location: /etc/amitshield/rules.d/default.rules
+# =============================================================================
+# Rules are applied in top-down order; first match wins.
+# Syntax (AmitShield rule format):
+#
+#   ACTION  DIRECTION  PROTO  PORT/RANGE  COMMENT
+#
+#   ACTION    : ALLOW | BLOCK | DROP | LOG
+#   DIRECTION : IN | OUT | BOTH
+#   PROTO     : tcp | udp | icmp | all
+#   PORT      : single port, range (low:high), or * for all
+# =============================================================================
+
+# ── Policy Defaults ───────────────────────────────────────────────────────────
+# These mirror the [firewall] section of amitshield.conf and act as a
+# fall-through when no explicit rule matches.
+
+BLOCK   IN    all   *          # Default-deny all inbound traffic
+ALLOW   OUT   all   *          # Allow all outbound traffic by default
+
+# ── Essential Inbound Services ────────────────────────────────────────────────
+
+ALLOW   IN    tcp   22         # SSH remote administration
+ALLOW   IN    tcp   80         # HTTP web traffic
+ALLOW   IN    tcp   443        # HTTPS encrypted web traffic
+
+# ── ICMP (Ping) ───────────────────────────────────────────────────────────────
+
+ALLOW   IN    icmp  *          # Allow inbound ping (diagnostic only)
+ALLOW   OUT   icmp  *          # Allow outbound ping
+
+# ── Loopback Interface ────────────────────────────────────────────────────────
+
+ALLOW   IN    all   *   lo     # Loopback inbound  (IPC, DBus, X11)
+ALLOW   OUT   all   *   lo     # Loopback outbound
+
+# ── DNS Resolution ────────────────────────────────────────────────────────────
+
+ALLOW   OUT   udp   53         # DNS queries (outbound)
+ALLOW   OUT   tcp   53         # DNS over TCP (zone transfers / large replies)
+
+# ── NTP Time Synchronisation ─────────────────────────────────────────────────
+
+ALLOW   OUT   udp   123        # NTP outbound
+
+# ── DHCP ─────────────────────────────────────────────────────────────────────
+
+ALLOW   IN    udp   67:68      # DHCP server -> client
+ALLOW   OUT   udp   67:68      # DHCP client -> server
+
+# ── Blocked: Known Malicious / Miner Ports ────────────────────────────────────
+
+BLOCK   BOTH  tcp   3333       # XMRig / Stratum mining pool (common)
+BLOCK   BOTH  tcp   4444       # XMRig / Monero pool alt port
+BLOCK   BOTH  tcp   5555       # ETH mining / Android ADB (suspicious outbound)
+BLOCK   BOTH  tcp   6666       # IRC C2 / legacy botnet port
+BLOCK   BOTH  tcp   7777       # Mining pool alt / generic backdoor
+BLOCK   BOTH  tcp   9999       # Mining pool alt
+BLOCK   BOTH  tcp   14444      # XMRig proxy port
+BLOCK   BOTH  tcp   45700      # Known miner C2
+
+# ── Blocked: Common Reverse-Shell & C2 Ports ─────────────────────────────────
+
+BLOCK   IN    tcp   4444       # Metasploit default listener
+BLOCK   IN    tcp   5555       # Common nc/bash reverse shell
+BLOCK   IN    tcp   1234       # Netcat quick reverse shell
+BLOCK   IN    tcp   31337      # "Elite" legacy backdoor port (Back Orifice)
+BLOCK   IN    tcp   12345      # NetBus legacy backdoor
+BLOCK   IN    tcp   54321      # Reverse shell alt
+
+# ── Blocked: Unnecessary Inbound Exposure ────────────────────────────────────
+
+BLOCK   IN    tcp   23         # Telnet (plaintext, insecure)
+BLOCK   IN    tcp   21         # FTP control (plaintext)
+BLOCK   IN    tcp   20         # FTP data
+BLOCK   IN    tcp   69         # TFTP
+BLOCK   IN    tcp   111        # RPC portmapper
+BLOCK   IN    tcp   135        # MS-RPC (not applicable on Linux but block anyway)
+BLOCK   IN    tcp   137:139    # NetBIOS
+BLOCK   IN    tcp   445        # SMB / Windows file sharing
+BLOCK   IN    udp   137:139    # NetBIOS UDP
+BLOCK   IN    tcp   512:514    # rsh / rlogin / rexec (legacy, insecure)
+BLOCK   IN    tcp   2049       # NFS (block unless explicitly needed)
+BLOCK   IN    tcp   6000:6007  # X11 TCP forwarding (use Unix sockets instead)
+
+# ── Logging ───────────────────────────────────────────────────────────────────
+# Log packets that hit the default-deny rule so sysadmins can review attempts.
+
+LOG     IN    all   *          # Log all unmatched inbound packets

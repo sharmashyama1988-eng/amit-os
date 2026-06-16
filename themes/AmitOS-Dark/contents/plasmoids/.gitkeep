@@ -1,0 +1,5 @@
+# AmitOS-Dark Plasmoids Directory
+
+This directory is reserved for custom KDE Plasma widgets (plasmoids) bundled with the AmitOS-Dark theme.
+
+Place any custom `.plasmoid` packages or widget source folders here.

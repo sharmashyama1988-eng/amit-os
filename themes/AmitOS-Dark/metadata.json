@@ -1,0 +1,20 @@
+{
+    "KPlugin": {
+        "Name": "AmitOS Dark",
+        "Description": "A sleek, modern dark plasma theme for AmitOS — built for clarity, performance, and aesthetics.",
+        "Authors": [
+            {
+                "Name": "Amit Sharma",
+                "Email": "amit@amitos.dev"
+            }
+        ],
+        "License": "GPL-2.0-or-later",
+        "Version": "1.0",
+        "Website": "https://github.com/sharmashyama1988-eng/amit-os",
+        "Id": "AmitOS-Dark",
+        "ServiceTypes": [
+            "Plasma/Theme"
+        ],
+        "Category": "Plasma Theme"
+    }
+}
