@@ -88,8 +88,7 @@ jobs:
             -exec sed -i 's|main/main|main|g' {} + \
             2>/dev/null || true
 
-          # Hot-patch lb_binary_syslinux to prevent bootlogo missing crash
-          sudo sed -i 's|cpio -t < binary/isolinux/bootlogo|touch binary/isolinux/bootlogo; cpio -t < binary/isolinux/bootlogo|g' /usr/lib/live/build/lb_binary_syslinux 2>/dev/null || true
+
 
       - name: Sync Project Files
         run: |
@@ -237,9 +236,12 @@ jobs:
       - name: Build ISO
         run: |
           # Satisfy live-build's syslinux bootlogo check which crashes on Ubuntu runners
-          sudo mkdir -p /usr/share/syslinux/themes/debian/isolinux-live /tmp/dummy-theme
-          sudo touch /tmp/dummy-theme/splash.png
-          sudo sh -c 'cd /tmp/dummy-theme && echo "splash.png" | cpio -H newc -o > /usr/share/syslinux/themes/debian/isolinux-live/bootlogo' 2>/dev/null
+          sudo mkdir -p /usr/share/syslinux/themes/debian/isolinux-live
+          sudo cp "${GITHUB_WORKSPACE}/dummy.cpio" /usr/share/syslinux/themes/debian/isolinux-live/bootlogo
+          sudo mkdir -p /tmp/amitos-build/config/bootloaders/isolinux
+          sudo mkdir -p /tmp/amitos-build/config/includes.binary/isolinux
+          sudo cp "${GITHUB_WORKSPACE}/dummy.cpio" /tmp/amitos-build/config/bootloaders/isolinux/bootlogo
+          sudo cp "${GITHUB_WORKSPACE}/dummy.cpio" /tmp/amitos-build/config/includes.binary/isolinux/bootlogo
 
           set -o pipefail
           BUILD_DIR="/tmp/amitos-build"
