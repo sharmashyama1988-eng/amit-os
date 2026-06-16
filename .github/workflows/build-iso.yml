@@ -102,10 +102,14 @@ jobs:
           sudo mkdir -p "$BUILD_DIR/config/includes.chroot/etc/amitshield"
           sudo mkdir -p "$BUILD_DIR/config/includes.chroot/etc/systemd/system"
           sudo mkdir -p "$BUILD_DIR/config/includes.chroot/usr/share/applications"
+          sudo mkdir -p "$BUILD_DIR/config/includes.chroot/usr/local/amitos/ui"
+          sudo mkdir -p "$BUILD_DIR/config/includes.chroot/etc/calamares/modules"
 
           sudo cp -r "$REPO/branding/"* "$BUILD_DIR/config/includes.chroot/usr/local/amitos/branding/" 2>/dev/null || true
           sudo cp -r "$REPO/apps/"*     "$BUILD_DIR/config/includes.chroot/usr/local/amitos/apps/"     2>/dev/null || true
           sudo cp -r "$REPO/core/"*     "$BUILD_DIR/config/includes.chroot/usr/local/amitos/core/"     2>/dev/null || true
+          sudo cp -r "$REPO/ui/"*       "$BUILD_DIR/config/includes.chroot/usr/local/amitos/ui/"       2>/dev/null || true
+          sudo cp -r "$REPO/installer/"* "$BUILD_DIR/config/includes.chroot/etc/calamares/"           2>/dev/null || true
           sudo cp -r "$REPO/themes/"*   "$BUILD_DIR/config/includes.chroot/usr/share/themes/"          2>/dev/null || true
           sudo cp -r "$REPO/config/"*   "$BUILD_DIR/config/"                                           2>/dev/null || true
 
