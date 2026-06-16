@@ -219,86 +219,88 @@ jobs:
           sudo mkdir -p "$BUILD_DIR/config/includes.chroot/usr/share/plymouth/themes/amitos"
           sudo mkdir -p "$BUILD_DIR/config/includes.chroot/usr/share/pixmaps"
 
-          sudo -E python3 << 'EOF'
-import os, shutil, sys
-try:
-    from PIL import Image
-    HAS_PIL = True
-except ImportError:
-    HAS_PIL = False
-    import struct, zlib
-
-REPO  = os.environ['GITHUB_WORKSPACE']
-BUILD = '/tmp/amitos-build'
-
-def write_fallback_png(path, w=640, h=480):
-    import struct, zlib
-    row = bytes([0]) + bytes([10, 14, 38] * w)
-    raw = row * h
-    comp = zlib.compress(raw, 1)
-    def ck(n, d):
-        c = n + d
-        return struct.pack('>I', len(d)) + c + struct.pack('>I', zlib.crc32(c) & 0xffffffff)
-    png = b'\x89PNG\r\n\x1a\n'
-    png += ck(b'IHDR', struct.pack('>IIBBBBB', w, h, 8, 2, 0, 0, 0))
-    png += ck(b'IDAT', comp)
-    png += ck(b'IEND', b'')
-    os.makedirs(os.path.dirname(path) or '.', exist_ok=True)
-    with open(path, 'wb') as f:
-        f.write(png)
-    print(f'  [OK] fallback PNG -> {path}')
-
-def save_png(img_or_path, dest, w, h):
-    os.makedirs(os.path.dirname(dest) or '.', exist_ok=True)
-    if HAS_PIL:
-        if isinstance(img_or_path, str):
-            img = Image.open(img_or_path).convert('RGB').resize((w, h), Image.Resampling.LANCZOS)
-        else:
-            img = img_or_path.resize((w, h), Image.Resampling.LANCZOS)
-        img.save(dest, 'PNG', optimize=True)
-    else:
-        write_fallback_png(dest, w, h)
-    kb = os.path.getsize(dest) // 1024
-    print(f'  [OK] {dest}  ({kb} KB)')
-
-boot_src   = os.path.join(REPO, 'branding', 'bootlogo.png')
-splash_src = os.path.join(REPO, 'branding', 'splash.png')
-
-# syslinux splash (640x480)
-splash_dests = [
-    f'{BUILD}/config/bootloaders/isolinux/splash.png',
-    f'{BUILD}/config/includes.binary/isolinux/splash.png',
-    f'{BUILD}/config/binary_local-includes/isolinux/splash.png',
-]
-for d in splash_dests:
-    save_png(boot_src, d, 640, 480)
-
-# Create dummy empty cpio bootlogo in all bootloader directories
-import subprocess
-for d in [
-    f'{BUILD}/config/bootloaders/isolinux',
-    f'{BUILD}/config/includes.binary/isolinux',
-    f'{BUILD}/config/binary_local-includes/isolinux',
-]:
-    os.makedirs(d, exist_ok=True)
-    subprocess.run('echo -n \"\" | cpio -H newc -o > ' + os.path.join(d, 'bootlogo') + ' 2>/dev/null', shell=True)
-
-# Plymouth splash (1920x1080)
-splash_dests_plymouth = [
-    f'{BUILD}/config/includes.chroot/usr/share/plymouth/themes/amitos/splash.png',
-    f'{BUILD}/config/includes.chroot/usr/share/pixmaps/amitos-splash.png',
-]
-for d in splash_dests_plymouth:
-    save_png(splash_src, d, 1920, 1080)
-
-# Copy originals into branding dir inside chroot
-branding_dir = f'{BUILD}/config/includes.chroot/usr/local/amitos/branding'
-os.makedirs(branding_dir, exist_ok=True)
-shutil.copy(boot_src,   os.path.join(branding_dir, 'bootlogo.png'))
-shutil.copy(splash_src, os.path.join(branding_dir, 'splash.png'))
-
-print('[OK] All branding images ready.')
-EOF
+          cat > /tmp/gen_logo.py << 'EOF'
+          import os, shutil, sys
+          try:
+              from PIL import Image
+              HAS_PIL = True
+          except ImportError:
+              HAS_PIL = False
+              import struct, zlib
+          
+          REPO  = os.environ['GITHUB_WORKSPACE']
+          BUILD = '/tmp/amitos-build'
+          
+          def write_fallback_png(path, w=640, h=480):
+              import struct, zlib
+              row = bytes([0]) + bytes([10, 14, 38] * w)
+              raw = row * h
+              comp = zlib.compress(raw, 1)
+              def ck(n, d):
+                  c = n + d
+                  return struct.pack('>I', len(d)) + c + struct.pack('>I', zlib.crc32(c) & 0xffffffff)
+              png = b'\x89PNG\r\n\x1a\n'
+              png += ck(b'IHDR', struct.pack('>IIBBBBB', w, h, 8, 2, 0, 0, 0))
+              png += ck(b'IDAT', comp)
+              png += ck(b'IEND', b'')
+              os.makedirs(os.path.dirname(path) or '.', exist_ok=True)
+              with open(path, 'wb') as f:
+                  f.write(png)
+              print(f'  [OK] fallback PNG -> {path}')
+          
+          def save_png(img_or_path, dest, w, h):
+              os.makedirs(os.path.dirname(dest) or '.', exist_ok=True)
+              if HAS_PIL:
+                  if isinstance(img_or_path, str):
+                      img = Image.open(img_or_path).convert('RGB').resize((w, h), Image.Resampling.LANCZOS)
+                  else:
+                      img = img_or_path.resize((w, h), Image.Resampling.LANCZOS)
+                  img.save(dest, 'PNG', optimize=True)
+              else:
+                  write_fallback_png(dest, w, h)
+              kb = os.path.getsize(dest) // 1024
+              print(f'  [OK] {dest}  ({kb} KB)')
+          
+          boot_src   = os.path.join(REPO, 'branding', 'bootlogo.png')
+          splash_src = os.path.join(REPO, 'branding', 'splash.png')
+          
+          # syslinux splash (640x480)
+          splash_dests = [
+              f'{BUILD}/config/bootloaders/isolinux/splash.png',
+              f'{BUILD}/config/includes.binary/isolinux/splash.png',
+              f'{BUILD}/config/binary_local-includes/isolinux/splash.png',
+          ]
+          for d in splash_dests:
+              save_png(boot_src, d, 640, 480)
+          
+          # Create dummy empty cpio bootlogo in all bootloader directories
+          import subprocess
+          for d in [
+              f'{BUILD}/config/bootloaders/isolinux',
+              f'{BUILD}/config/includes.binary/isolinux',
+              f'{BUILD}/config/binary_local-includes/isolinux',
+          ]:
+              os.makedirs(d, exist_ok=True)
+              subprocess.run('echo -n \"\" | cpio -H newc -o > ' + os.path.join(d, 'bootlogo') + ' 2>/dev/null', shell=True)
+          
+          # Plymouth splash (1920x1080)
+          splash_dests_plymouth = [
+              f'{BUILD}/config/includes.chroot/usr/share/plymouth/themes/amitos/splash.png',
+              f'{BUILD}/config/includes.chroot/usr/share/pixmaps/amitos-splash.png',
+          ]
+          for d in splash_dests_plymouth:
+              save_png(splash_src, d, 1920, 1080)
+          
+          # Copy originals into branding dir inside chroot
+          branding_dir = f'{BUILD}/config/includes.chroot/usr/local/amitos/branding'
+          os.makedirs(branding_dir, exist_ok=True)
+          shutil.copy(boot_src,   os.path.join(branding_dir, 'bootlogo.png'))
+          shutil.copy(splash_src, os.path.join(branding_dir, 'splash.png'))
+          
+          print('[OK] All branding images ready.')
+          EOF
+          sed -i 's/^ \{10\}//' /tmp/gen_logo.py
+          sudo -E python3 /tmp/gen_logo.py
 
 
           # Plymouth theme descriptor
